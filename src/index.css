@@ -1,0 +1,113 @@
+/* Import Inter font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  
+  body {
+    @apply bg-gray-50 font-sans antialiased text-gray-900;
+  }
+}
+
+@layer components {
+  /* Card components */
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-gray-200;
+  }
+  
+  .card-hover {
+    @apply card hover:shadow-md transition-shadow duration-200;
+  }
+
+  /* Button components */
+  .btn-primary {
+    @apply bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-white hover:bg-orange-50 text-orange-500 border border-orange-500 font-semibold py-3 px-6 rounded-xl transition-colors duration-200;
+  }
+  
+  .btn-ghost {
+    @apply text-orange-500 hover:text-orange-600 hover:bg-orange-50 font-semibold py-2 px-4 rounded-xl transition-colors duration-200;
+  }
+
+  /* Input components */
+  .input {
+    @apply w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none transition-colors duration-200;
+  }
+
+  /* Status badges */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide;
+  }
+  
+  .badge-orange {
+    @apply badge bg-orange-100 text-orange-700;
+  }
+  
+  .badge-grey {
+    @apply badge bg-gray-100 text-gray-600;
+  }
+
+  /* Navigation components */
+  .nav-item {
+    @apply flex flex-col items-center py-2 px-3 text-gray-500 transition-colors duration-200;
+  }
+  
+  .nav-item-active {
+    @apply nav-item text-orange-500;
+  }
+
+  /* Progress components */
+  .progress-bar {
+    @apply w-full h-2 bg-gray-200 rounded-full overflow-hidden;
+  }
+  
+  .progress-fill {
+    @apply h-full bg-gradient-to-r from-orange-500 to-orange-400 transition-all duration-300 ease-out;
+  }
+
+  /* Loading states */
+  .skeleton {
+    @apply animate-pulse bg-gray-200 rounded;
+  }
+
+  /* Layout utilities */
+  .container-mobile {
+    @apply max-w-sm mx-auto px-4;
+  }
+  
+  .container-desktop {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
+
+@layer utilities {
+  /* Custom gradients */
+  .gradient-orange {
+    background: linear-gradient(135deg, #FF6B35 0%, #FF916D 100%);
+  }
+
+  /* iOS-style scrolling */
+  .smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Safe area utilities for mobile */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
