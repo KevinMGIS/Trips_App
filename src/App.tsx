@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import LoginPage from './components/LoginPage'
 import CreateTripPage from './components/CreateTripPage'
+import TripDetailPage from './components/TripDetailPage'
 import Header from './components/Header'
 import AnimatedLogo from './components/AnimatedLogo'
 import './index.css'
@@ -55,7 +56,10 @@ function TripCard({ trip }: { trip: Trip }) {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    // Parse date as local date to avoid timezone issues
+    const [year, month, day] = dateString.split('T')[0].split('-')
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -64,7 +68,9 @@ function TripCard({ trip }: { trip: Trip }) {
 
   const getDaysUntil = (dateString: string) => {
     const today = new Date()
-    const tripDate = new Date(dateString)
+    // Parse date as local date to avoid timezone issues
+    const [year, month, day] = dateString.split('T')[0].split('-')
+    const tripDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
     const diffTime = tripDate.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
@@ -160,7 +166,6 @@ function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    console.log('Dashboard useEffect - user:', user)
     if (user && user.id) {
       loadTrips()
     }
@@ -168,32 +173,34 @@ function Dashboard() {
 
   const loadTrips = async () => {
     if (!user || !user.id) {
-      console.log('No user or user ID available. User:', user)
       return
     }
     
-    console.log('Loading trips for user:', user.id, 'User object:', user)
     setLoading(true)
     const { data, error } = await TripService.getUserTrips(user.id)
     
     if (error) {
       console.error('Error loading trips:', error)
-      console.error('Full error object:', error)
     } else {
-      console.log('Trips loaded successfully:', data)
       setTrips(data || [])
     }
     setLoading(false)
   }
 
+  // Helper function to parse date safely
+  const parseDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('T')[0].split('-')
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+  }
+
   // Calculate stats and group trips
   const upcomingTrips = trips.filter(trip => 
-    new Date(trip.start_date) > new Date() && trip.status !== 'cancelled'
+    parseDate(trip.start_date) > new Date() && trip.status !== 'cancelled'
   )
   const inProgressTrips = trips.filter(trip => trip.status === 'in_progress')
   const completedTrips = trips.filter(trip => trip.status === 'completed')
   const pastTrips = trips.filter(trip => 
-    new Date(trip.end_date) < new Date() && trip.status !== 'in_progress'
+    parseDate(trip.end_date) < new Date() && trip.status !== 'in_progress'
   )
 
   return (
@@ -401,6 +408,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CreateTripPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/trips/:id"
+            element={
+              <ProtectedRoute>
+                <TripDetailPage />
               </ProtectedRoute>
             }
           />

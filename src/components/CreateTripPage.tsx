@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { MapPin, Calendar, DollarSign, Image, Save } from 'lucide-react'
+import { MapPin, Calendar, Image, Save } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../contexts/AuthContext'
@@ -16,7 +16,6 @@ interface TripFormData {
   destination: string
   startDate: string
   endDate: string
-  budgetTotal: number | null
   coverImageUrl: string
   status: 'planning' | 'booked' | 'in_progress' | 'completed' | 'cancelled'
 }
@@ -27,7 +26,6 @@ const initialFormData: TripFormData = {
   destination: '',
   startDate: '',
   endDate: '',
-  budgetTotal: null,
   coverImageUrl: '',
   status: 'planning'
 }
@@ -59,20 +57,21 @@ export default function CreateTripPage() {
     }
     
     if (formData.startDate && formData.endDate) {
-      const startDate = new Date(formData.startDate)
-      const endDate = new Date(formData.endDate)
+      // Parse dates as local dates to avoid timezone issues
+      const [startYear, startMonth, startDay] = formData.startDate.split('-')
+      const [endYear, endMonth, endDay] = formData.endDate.split('-')
+      const startDate = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay))
+      const endDate = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay))
       
       if (startDate >= endDate) {
         newErrors.endDate = 'End date must be after start date'
       }
       
-      if (startDate.getTime() < new Date().setHours(0, 0, 0, 0)) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      if (startDate.getTime() < today.getTime()) {
         newErrors.startDate = 'Start date cannot be in the past'
       }
-    }
-    
-    if (formData.budgetTotal !== null && formData.budgetTotal < 0) {
-      newErrors.budgetTotal = 'Budget cannot be negative'
     }
 
     setErrors(newErrors)
@@ -104,7 +103,6 @@ export default function CreateTripPage() {
         destination: formData.destination.trim(),
         start_date: formData.startDate,
         end_date: formData.endDate,
-        budget_total: formData.budgetTotal ?? undefined,
         cover_image_url: formData.coverImageUrl.trim() || undefined,
         status: formData.status,
         created_by: user.id
@@ -129,9 +127,7 @@ export default function CreateTripPage() {
   const handleInputChange = (field: keyof TripFormData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const value = field === 'budgetTotal' 
-      ? (e.target.value === '' ? null : parseFloat(e.target.value))
-      : e.target.value
+    const value = e.target.value
 
     setFormData(prev => ({ ...prev, [field]: value }))
     
@@ -310,51 +306,16 @@ export default function CreateTripPage() {
                   transition={{ duration: 0.3 }}
                 >
                   <p className="text-sm text-gray-600">
-                    Trip duration: {Math.ceil((new Date(formData.endDate).getTime() - new Date(formData.startDate).getTime()) / (1000 * 60 * 60 * 24))} days
+                    Trip duration: {(() => {
+                      const [startYear, startMonth, startDay] = formData.startDate.split('-')
+                      const [endYear, endMonth, endDay] = formData.endDate.split('-')
+                      const startDate = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay))
+                      const endDate = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay))
+                      return Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+                    })()} days
                   </p>
                 </motion.div>
               )}
-            </motion.div>
-
-            {/* Budget Card */}
-            <motion.div 
-              className="card p-6 md:p-8"
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0 }
-              }}
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                  <DollarSign className="w-5 h-5 text-green-600" />
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900">Budget (Optional)</h2>
-              </div>
-
-              <div>
-                <label htmlFor="budgetTotal" className="block text-sm font-medium text-gray-900 mb-2">
-                  Total Budget
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                  <input
-                    id="budgetTotal"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.budgetTotal ?? ''}
-                    onChange={handleInputChange('budgetTotal')}
-                    className={cn('input pl-8', errors.budgetTotal && 'border-red-500')}
-                    placeholder="0.00"
-                  />
-                </div>
-                {errors.budgetTotal && (
-                  <p className="mt-1 text-sm text-red-600">{errors.budgetTotal}</p>
-                )}
-                <p className="mt-1 text-xs text-gray-500">
-                  Set a budget to help track your trip expenses
-                </p>
-              </div>
             </motion.div>
 
             {/* Additional Options Card */}

@@ -1,0 +1,1339 @@
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { 
+  ArrowLeft, Calendar, MapPin, DollarSign, Clock,
+  Plus, Edit, Trash2, Plane, Hotel, Car, Camera,
+  CheckCircle, Circle, X
+} from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
+import { TripService } from '../lib/tripService'
+import type { Trip, ItineraryItem } from '../types/database'
+import Header from './Header'
+
+// Timeline Item Component
+function TimelineItem({ item, onEdit, onDelete }: { 
+  item: ItineraryItem
+  onEdit: (item: ItineraryItem) => void
+  onDelete: (id: string) => void
+}) {
+  const getIcon = (category: string) => {
+    switch (category) {
+      case 'flight': return <Plane className="w-4 h-4" />
+      case 'accommodation': return <Hotel className="w-4 h-4" />
+      case 'transport': return <Car className="w-4 h-4" />
+      case 'activity': return <Camera className="w-4 h-4" />
+      default: return <Circle className="w-4 h-4" />
+    }
+  }
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'flight': return 'bg-blue-100 text-blue-700 border-blue-200'
+      case 'accommodation': return 'bg-green-100 text-green-700 border-green-200'
+      case 'transport': return 'bg-purple-100 text-purple-700 border-purple-200'
+      case 'activity': return 'bg-orange-100 text-orange-700 border-orange-200'
+      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+    }
+  }
+
+  return (
+    <motion.div
+      className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-3 flex-1">
+          <div className={`p-2 rounded-lg ${getCategoryColor(item.category)}`}>
+            {getIcon(item.category)}
+          </div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-gray-900 mb-1">{item.title}</h4>
+            {item.description && (
+              <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+            )}
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {new Date(item.start_datetime).toLocaleTimeString([], { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}
+              </span>
+              {item.location && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {item.location}
+                </span>
+              )}
+              {item.cost && (
+                <span className="flex items-center gap-1">
+                  <DollarSign className="w-3 h-3" />
+                  ${item.cost}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onEdit(item)}
+            className="p-1 text-gray-400 hover:text-orange-500 transition-colors"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => onDelete(item.id)}
+            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// Accommodation Card Component
+function AccommodationCard({ accommodation, onEdit, onDelete }: { 
+  accommodation: ItineraryItem
+  onEdit: (item: ItineraryItem) => void
+  onDelete: (id: string) => void
+}) {
+  const formatDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('T')[0].split('-')
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })
+  }
+
+  const getNumberOfNights = () => {
+    if (!accommodation.end_datetime) return null
+    const start = new Date(accommodation.start_datetime)
+    const end = new Date(accommodation.end_datetime)
+    const diffTime = end.getTime() - start.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
+
+  return (
+    <motion.div
+      className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start gap-3 flex-1">
+          <div className="p-2 rounded-lg bg-green-100 text-green-700 border-green-200">
+            <Hotel className="w-5 h-5" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">{accommodation.title}</h3>
+            {accommodation.location && (
+              <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                {accommodation.location}
+              </p>
+            )}
+            {accommodation.description && (
+              <p className="text-sm text-gray-600 mb-3">{accommodation.description}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onEdit(accommodation)}
+            className="p-2 text-gray-400 hover:text-orange-500 transition-colors"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => onDelete(accommodation.id)}
+            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div>
+          <p className="text-xs text-gray-500 mb-1">Check-in</p>
+          <p className="text-sm font-medium text-gray-900">
+            {formatDate(accommodation.start_datetime)}
+          </p>
+          <p className="text-xs text-gray-500">
+            {formatTime(accommodation.start_datetime)}
+          </p>
+        </div>
+
+        {accommodation.end_datetime && (
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Check-out</p>
+            <p className="text-sm font-medium text-gray-900">
+              {formatDate(accommodation.end_datetime)}
+            </p>
+            <p className="text-xs text-gray-500">
+              {formatTime(accommodation.end_datetime)}
+            </p>
+          </div>
+        )}
+
+        {getNumberOfNights() && (
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Duration</p>
+            <p className="text-sm font-medium text-gray-900">
+              {getNumberOfNights()} {getNumberOfNights() === 1 ? 'night' : 'nights'}
+            </p>
+          </div>
+        )}
+
+        {accommodation.cost && (
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Cost</p>
+            <p className="text-sm font-medium text-gray-900">
+              ${accommodation.cost}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {(accommodation.confirmation_number || accommodation.booking_url || accommodation.notes) && (
+        <div className="border-t pt-4 space-y-2">
+          {accommodation.confirmation_number && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">Confirmation:</span>
+              <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                {accommodation.confirmation_number}
+              </span>
+            </div>
+          )}
+          {accommodation.booking_url && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">Booking:</span>
+              <a 
+                href={accommodation.booking_url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-xs text-orange-600 hover:text-orange-700 underline"
+              >
+                View Details
+              </a>
+            </div>
+          )}
+          {accommodation.notes && (
+            <div>
+              <span className="text-xs text-gray-500">Notes:</span>
+              <p className="text-xs text-gray-600 mt-1">{accommodation.notes}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
+// Quick Stats Component
+function QuickStats({ trip, stats }: { trip: Trip, stats: any }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-white rounded-xl p-4 border border-gray-200">
+        <div className="flex items-center gap-2 mb-2">
+          <Calendar className="w-4 h-4 text-blue-500" />
+          <span className="text-sm font-medium text-gray-600">Duration</span>
+        </div>
+        <p className="text-lg font-bold text-gray-900">
+          {(() => {
+            const [startYear, startMonth, startDay] = trip.start_date.split('T')[0].split('-')
+            const [endYear, endMonth, endDay] = trip.end_date.split('T')[0].split('-')
+            const startDate = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay))
+            const endDate = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay))
+            return Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+          })()} days
+        </p>
+      </div>
+      
+      <div className="bg-white rounded-xl p-4 border border-gray-200">
+        <div className="flex items-center gap-2 mb-2">
+          <CheckCircle className="w-4 h-4 text-orange-500" />
+          <span className="text-sm font-medium text-gray-600">Itinerary Items</span>
+        </div>
+        <p className="text-lg font-bold text-gray-900">{stats.itineraryItems || 0}</p>
+      </div>
+    </div>
+  )
+}
+
+export default function TripDetailPage() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const [trip, setTrip] = useState<Trip | null>(null)
+  const [itineraryItems, setItineraryItems] = useState<ItineraryItem[]>([])
+  const [stats, setStats] = useState<any>({})
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('overview')
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showItineraryModal, setShowItineraryModal] = useState(false)
+  const [showAccommodationModal, setShowAccommodationModal] = useState(false)
+  const [editingItem, setEditingItem] = useState<ItineraryItem | null>(null)
+  const [accommodations, setAccommodations] = useState<ItineraryItem[]>([])
+  const [editForm, setEditForm] = useState({
+    title: '',
+    destination: '',
+    start_date: '',
+    end_date: '',
+    description: ''
+  })
+  const [itineraryForm, setItineraryForm] = useState({
+    title: '',
+    description: '',
+    category: 'flight' as ItineraryItem['category'],
+    start_datetime: '',
+    end_datetime: '',
+    location: '',
+    cost: '',
+    confirmation_number: '',
+    notes: ''
+  })
+  const [accommodationForm, setAccommodationForm] = useState({
+    title: '',
+    description: '',
+    start_datetime: '',
+    end_datetime: '',
+    location: '',
+    cost: '',
+    confirmation_number: '',
+    notes: '',
+    booking_url: ''
+  })
+
+  useEffect(() => {
+    if (id) {
+      loadTripData()
+    }
+  }, [id])
+
+  const loadTripData = async () => {
+    if (!id || !user?.id) return
+    
+    setLoading(true)
+    try {
+      // Load trip details
+      const { data: tripData, error: tripError } = await TripService.getTripById(id)
+      if (tripError) throw tripError
+      
+      // Load trip statistics
+      const { data: statsData, error: statsError } = await TripService.getTripStats(id)
+      if (statsError) throw statsError
+      
+      setTrip(tripData)
+      setStats(statsData || {})
+      
+      // Initialize edit form with trip data
+      if (tripData) {
+        setEditForm({
+          title: tripData.title,
+          destination: tripData.destination,
+          start_date: tripData.start_date.split('T')[0],
+          end_date: tripData.end_date.split('T')[0],
+          description: tripData.description || ''
+        })
+      }
+      
+      // Load itinerary items
+      if (tripData) {
+        const { data: itineraryData, error: itineraryError } = await TripService.getItineraryItems(tripData.id)
+        if (itineraryError) {
+          console.error('Error loading itinerary items:', itineraryError)
+        } else {
+          setItineraryItems(itineraryData || [])
+          // Filter accommodations
+          const accommodationItems = (itineraryData || []).filter(item => item.category === 'accommodation')
+          setAccommodations(accommodationItems)
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error loading trip data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEditItem = (item: ItineraryItem) => {
+    setEditingItem(item)
+    setItineraryForm({
+      title: item.title,
+      description: item.description || '',
+      category: item.category,
+      start_datetime: item.start_datetime.split('.')[0], // Remove milliseconds for datetime-local input
+      end_datetime: item.end_datetime?.split('.')[0] || '',
+      location: item.location || '',
+      cost: item.cost?.toString() || '',
+      confirmation_number: item.confirmation_number || '',
+      notes: item.notes || ''
+    })
+    setShowItineraryModal(true)
+  }
+
+  const handleDeleteItem = (itemId: string) => {
+    if (confirm('Are you sure you want to delete this item?')) {
+      deleteItineraryItem(itemId)
+    }
+  }
+
+  const handleAddItineraryItem = () => {
+    setEditingItem(null)
+    setItineraryForm({
+      title: '',
+      description: '',
+      category: 'flight',
+      start_datetime: '',
+      end_datetime: '',
+      location: '',
+      cost: '',
+      confirmation_number: '',
+      notes: ''
+    })
+    setShowItineraryModal(true)
+  }
+
+  const saveItineraryItem = async () => {
+    if (!trip || !user) return
+
+    try {
+      const itemData = {
+        trip_id: trip.id,
+        title: itineraryForm.title,
+        description: itineraryForm.description || null,
+        category: itineraryForm.category,
+        start_datetime: itineraryForm.start_datetime,
+        end_datetime: itineraryForm.end_datetime || null,
+        location: itineraryForm.location || null,
+        cost: itineraryForm.cost ? parseFloat(itineraryForm.cost) : null,
+        confirmation_number: itineraryForm.confirmation_number || null,
+        notes: itineraryForm.notes || null,
+        created_by: user.id
+      }
+
+      if (editingItem) {
+        // Update existing item
+        await TripService.updateItineraryItem(editingItem.id, itemData)
+      } else {
+        // Create new item
+        await TripService.createItineraryItem(itemData)
+      }
+
+      // Reload itinerary items
+      await loadTripData()
+      setShowItineraryModal(false)
+    } catch (error) {
+      console.error('Error saving itinerary item:', error)
+    }
+  }
+
+  const deleteItineraryItem = async (itemId: string) => {
+    try {
+      await TripService.deleteItineraryItem(itemId)
+      // Reload itinerary items
+      await loadTripData()
+    } catch (error) {
+      console.error('Error deleting itinerary item:', error)
+    }
+  }
+
+  // Accommodation management functions
+  const handleAddAccommodation = () => {
+    setEditingItem(null)
+    setAccommodationForm({
+      title: '',
+      description: '',
+      start_datetime: '',
+      end_datetime: '',
+      location: '',
+      cost: '',
+      confirmation_number: '',
+      notes: '',
+      booking_url: ''
+    })
+    setShowAccommodationModal(true)
+  }
+
+  const handleEditAccommodation = (item: ItineraryItem) => {
+    setEditingItem(item)
+    setAccommodationForm({
+      title: item.title,
+      description: item.description || '',
+      start_datetime: item.start_datetime.split('.')[0],
+      end_datetime: item.end_datetime?.split('.')[0] || '',
+      location: item.location || '',
+      cost: item.cost?.toString() || '',
+      confirmation_number: item.confirmation_number || '',
+      notes: item.notes || '',
+      booking_url: item.booking_url || ''
+    })
+    setShowAccommodationModal(true)
+  }
+
+  const saveAccommodation = async () => {
+    if (!trip || !user) return
+
+    try {
+      const itemData = {
+        trip_id: trip.id,
+        title: accommodationForm.title,
+        description: accommodationForm.description || null,
+        category: 'accommodation' as const,
+        start_datetime: accommodationForm.start_datetime,
+        end_datetime: accommodationForm.end_datetime || null,
+        location: accommodationForm.location || null,
+        cost: accommodationForm.cost ? parseFloat(accommodationForm.cost) : null,
+        confirmation_number: accommodationForm.confirmation_number || null,
+        notes: accommodationForm.notes || null,
+        booking_url: accommodationForm.booking_url || null,
+        created_by: user.id
+      }
+
+      if (editingItem) {
+        await TripService.updateItineraryItem(editingItem.id, itemData)
+      } else {
+        await TripService.createItineraryItem(itemData)
+      }
+
+      // Reload trip data
+      await loadTripData()
+      setShowAccommodationModal(false)
+    } catch (error) {
+      console.error('Error saving accommodation:', error)
+    }
+  }
+
+  const handleEditTrip = () => {
+    setShowEditModal(true)
+  }
+
+  const handleSaveTrip = async () => {
+    if (!trip || !user) return
+
+    try {
+      // Convert form data to proper types
+      const updateData = {
+        title: editForm.title,
+        destination: editForm.destination,
+        start_date: editForm.start_date,
+        end_date: editForm.end_date,
+        description: editForm.description
+      }
+
+      await TripService.updateTrip(trip.id, updateData)
+      
+      // Reload trip data
+      await loadTripData()
+      setShowEditModal(false)
+    } catch (error) {
+      console.error('Error updating trip:', error)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    if (trip) {
+      setEditForm({
+        title: trip.title,
+        destination: trip.destination,
+        start_date: trip.start_date.split('T')[0],
+        end_date: trip.end_date.split('T')[0],
+        description: trip.description || ''
+      })
+    }
+    setShowEditModal(false)
+  }
+
+  const formatDate = (dateString: string) => {
+    // Parse date as local date to avoid timezone issues
+    const [year, month, day] = dateString.split('T')[0].split('-')
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  const getStatusColor = (status: Trip['status']) => {
+    switch (status) {
+      case 'planning': return 'bg-blue-100 text-blue-700 border-blue-200'
+      case 'booked': return 'bg-green-100 text-green-700 border-green-200'
+      case 'in_progress': return 'bg-orange-100 text-orange-700 border-orange-200'
+      case 'completed': return 'bg-gray-100 text-gray-700 border-gray-200'
+      case 'cancelled': return 'bg-red-100 text-red-700 border-red-200'
+      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+    }
+  }
+
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+        </div>
+      </>
+    )
+  }
+
+  if (!trip) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Trip Not Found</h2>
+            <p className="text-gray-600 mb-4">The trip you're looking for doesn't exist or you don't have access to it.</p>
+            <button
+              onClick={() => navigate('/')}
+              className="btn-primary"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  return (
+    <>
+      <Header />
+      <div className="min-h-screen bg-background">
+        <div className="container py-8">
+          {/* Trip Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <div className="flex items-center gap-4 mb-6">
+              <button
+                onClick={() => navigate('/')}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-3xl font-bold text-gray-900">{trip.title}</h1>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(trip.status)}`}>
+                    {trip.status.replace('_', ' ')}
+                  </span>
+                </div>
+                <div className="flex items-center gap-6 text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    <span>{trip.destination}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    <span>{formatDate(trip.start_date)} - {formatDate(trip.end_date)}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleEditTrip}
+                  className="btn-primary flex items-center gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit Trip
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            <QuickStats trip={trip} stats={stats} />
+          </motion.div>
+
+          {/* Navigation Tabs */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-8"
+          >
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                {[
+                  { id: 'overview', label: 'Overview' },
+                  { id: 'itinerary', label: 'Itinerary' },
+                  { id: 'accommodations', label: 'Accommodations' }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      activeTab === tab.id
+                        ? 'border-orange-500 text-orange-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </motion.div>
+
+          {/* Tab Content */}
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            {activeTab === 'overview' && (
+              <div className="space-y-8">
+                {/* Trip Description */}
+                {trip.description && (
+                  <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">About This Trip</h3>
+                    <p className="text-gray-600 leading-relaxed">{trip.description}</p>
+                  </div>
+                )}
+
+                {/* Complete Trip Timeline */}
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-semibold text-gray-900">Complete Trip Timeline</h3>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => setActiveTab('itinerary')}
+                        className="btn-secondary text-sm"
+                      >
+                        Manage Itinerary
+                      </button>
+                      <button 
+                        onClick={() => setActiveTab('accommodations')}
+                        className="btn-secondary text-sm"
+                      >
+                        Manage Hotels
+                      </button>
+                    </div>
+                  </div>
+
+                  {[...itineraryItems, ...accommodations].length === 0 ? (
+                    <div className="bg-white rounded-2xl p-8 border border-gray-200 text-center">
+                      <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">No trip activities planned yet</h4>
+                      <p className="text-gray-600 mb-4">Start building your trip by adding flights, hotels, activities, and more.</p>
+                      <div className="flex items-center justify-center gap-3">
+                        <button 
+                          onClick={handleAddItineraryItem}
+                          className="btn-primary"
+                        >
+                          Add Activity
+                        </button>
+                        <button 
+                          onClick={handleAddAccommodation}
+                          className="btn-secondary"
+                        >
+                          Add Hotel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Accommodations Section */}
+                      {accommodations.length > 0 && (
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <Hotel className="w-5 h-5 text-green-600" />
+                            Accommodations ({accommodations.length})
+                          </h4>
+                          <div className="space-y-3">
+                            {accommodations
+                              .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
+                              .map((accommodation) => (
+                                <AccommodationCard
+                                  key={accommodation.id}
+                                  accommodation={accommodation}
+                                  onEdit={handleEditAccommodation}
+                                  onDelete={handleDeleteItem}
+                                />
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Itinerary Items Section */}
+                      {itineraryItems.filter(item => item.category !== 'accommodation').length > 0 && (
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <Calendar className="w-5 h-5 text-blue-600" />
+                            Activities & Transportation ({itineraryItems.filter(item => item.category !== 'accommodation').length})
+                          </h4>
+                          <div className="space-y-3">
+                            {itineraryItems
+                              .filter(item => item.category !== 'accommodation')
+                              .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
+                              .map((item) => (
+                                <TimelineItem
+                                  key={item.id}
+                                  item={item}
+                                  onEdit={handleEditItem}
+                                  onDelete={handleDeleteItem}
+                                />
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Combined Timeline View Toggle */}
+                      <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-900 mb-1">Want to see everything mixed together?</h4>
+                            <p className="text-xs text-gray-600">View all activities and accommodations in chronological order</p>
+                          </div>
+                          <button 
+                            onClick={() => setActiveTab('itinerary')}
+                            className="btn-primary text-sm"
+                          >
+                            View Timeline
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'itinerary' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-gray-900">Trip Timeline</h3>
+                  <button 
+                    onClick={handleAddItineraryItem}
+                    className="btn-primary flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Activity
+                  </button>
+                </div>
+
+                {itineraryItems.length === 0 ? (
+                  <div className="bg-white rounded-2xl p-8 border border-gray-200 text-center">
+                    <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">No activities planned yet</h4>
+                    <p className="text-gray-600 mb-4">Start building your itinerary by adding flights, hotels, activities, and more.</p>
+                    <button 
+                      onClick={handleAddItineraryItem}
+                      className="btn-primary"
+                    >
+                      Add Your First Activity
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {itineraryItems.map((item) => (
+                      <TimelineItem
+                        key={item.id}
+                        item={item}
+                        onEdit={handleEditItem}
+                        onDelete={handleDeleteItem}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Accommodations tab */}
+            {activeTab === 'accommodations' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-gray-900">Accommodations</h3>
+                  <button 
+                    onClick={handleAddAccommodation}
+                    className="btn-primary flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Hotel
+                  </button>
+                </div>
+
+                {accommodations.length === 0 ? (
+                  <div className="bg-white rounded-2xl p-8 border border-gray-200 text-center">
+                    <Hotel className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">No accommodations booked yet</h4>
+                    <p className="text-gray-600 mb-4">Add your hotel reservations, Airbnb bookings, and other accommodation details.</p>
+                    <button 
+                      onClick={handleAddAccommodation}
+                      className="btn-primary"
+                    >
+                      Add Your First Hotel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {accommodations.map((accommodation) => (
+                      <AccommodationCard
+                        key={accommodation.id}
+                        accommodation={accommodation}
+                        onEdit={handleEditAccommodation}
+                        onDelete={handleDeleteItem}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </motion.div>
+        </div>
+
+        {/* Edit Trip Modal */}
+        {showEditModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-2xl p-6 w-full max-w-md"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Edit Trip</h2>
+                <button
+                  onClick={handleCancelEdit}
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Trip Title
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.title}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Enter trip title"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Destination
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.destination}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, destination: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Enter destination"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      value={editForm.start_date}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, start_date: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      value={editForm.end_date}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, end_date: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={editForm.description}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Enter trip description"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleCancelEdit}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveTrip}
+                  className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Itinerary Item Modal */}
+        {showItineraryModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {editingItem ? 'Edit' : 'Add'} Itinerary Item
+                </h2>
+                <button
+                  onClick={() => setShowItineraryModal(false)}
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Title *
+                    </label>
+                    <input
+                      type="text"
+                      value={itineraryForm.title}
+                      onChange={(e) => setItineraryForm(prev => ({ ...prev, title: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="Flight to Paris, Hotel Check-in, etc."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Category *
+                    </label>
+                    <select
+                      value={itineraryForm.category}
+                      onChange={(e) => setItineraryForm(prev => ({ ...prev, category: e.target.value as ItineraryItem['category'] }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    >
+                      <option value="flight">Flight</option>
+                      <option value="accommodation">Hotel/Accommodation</option>
+                      <option value="activity">Activity</option>
+                      <option value="restaurant">Restaurant</option>
+                      <option value="transport">Transportation</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={itineraryForm.description}
+                    onChange={(e) => setItineraryForm(prev => ({ ...prev, description: e.target.value }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Additional details about this item"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Start Date & Time *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={itineraryForm.start_datetime}
+                      onChange={(e) => setItineraryForm(prev => ({ ...prev, start_datetime: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      End Date & Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={itineraryForm.end_datetime}
+                      onChange={(e) => setItineraryForm(prev => ({ ...prev, end_datetime: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      value={itineraryForm.location}
+                      onChange={(e) => setItineraryForm(prev => ({ ...prev, location: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="Airport, hotel address, venue, etc."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Cost
+                    </label>
+                    <input
+                      type="number"
+                      value={itineraryForm.cost}
+                      onChange={(e) => setItineraryForm(prev => ({ ...prev, cost: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirmation Number
+                    </label>
+                    <input
+                      type="text"
+                      value={itineraryForm.confirmation_number}
+                      onChange={(e) => setItineraryForm(prev => ({ ...prev, confirmation_number: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="ABC123, etc."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Notes
+                    </label>
+                    <input
+                      type="text"
+                      value={itineraryForm.notes}
+                      onChange={(e) => setItineraryForm(prev => ({ ...prev, notes: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="Gate info, special instructions, etc."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setShowItineraryModal(false)}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveItineraryItem}
+                  className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  {editingItem ? 'Save Changes' : 'Add Item'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Accommodation Modal */}
+        {showAccommodationModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {editingItem ? 'Edit' : 'Add'} Accommodation
+                </h2>
+                <button
+                  onClick={() => setShowAccommodationModal(false)}
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Hotel/Property Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={accommodationForm.title}
+                    onChange={(e) => setAccommodationForm(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="e.g., Marriott Hotel, Airbnb Downtown"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={accommodationForm.description}
+                    onChange={(e) => setAccommodationForm(prev => ({ ...prev, description: e.target.value }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Room type, amenities, special notes"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Address/Location
+                  </label>
+                  <input
+                    type="text"
+                    value={accommodationForm.location}
+                    onChange={(e) => setAccommodationForm(prev => ({ ...prev, location: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Hotel address or area"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Check-in Date & Time *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={accommodationForm.start_datetime}
+                      onChange={(e) => setAccommodationForm(prev => ({ ...prev, start_datetime: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Check-out Date & Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={accommodationForm.end_datetime}
+                      onChange={(e) => setAccommodationForm(prev => ({ ...prev, end_datetime: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Total Cost
+                    </label>
+                    <input
+                      type="number"
+                      value={accommodationForm.cost}
+                      onChange={(e) => setAccommodationForm(prev => ({ ...prev, cost: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirmation Number
+                    </label>
+                    <input
+                      type="text"
+                      value={accommodationForm.confirmation_number}
+                      onChange={(e) => setAccommodationForm(prev => ({ ...prev, confirmation_number: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="Booking confirmation"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Booking URL
+                  </label>
+                  <input
+                    type="url"
+                    value={accommodationForm.booking_url}
+                    onChange={(e) => setAccommodationForm(prev => ({ ...prev, booking_url: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="https://booking.com/..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    value={accommodationForm.notes}
+                    onChange={(e) => setAccommodationForm(prev => ({ ...prev, notes: e.target.value }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Check-in instructions, WiFi password, etc."
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setShowAccommodationModal(false)}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveAccommodation}
+                  className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  {editingItem ? 'Save Changes' : 'Add Accommodation'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </div>
+    </>
+  )
+}

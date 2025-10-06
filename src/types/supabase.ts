@@ -18,8 +18,6 @@ export interface Database {
           start_date: string | null
           end_date: string | null
           status: 'planning' | 'upcoming' | 'completed'
-          budget_amount: number | null
-          budget_spent: number
           created_by: string
           created_at: string
           updated_at: string
@@ -32,8 +30,6 @@ export interface Database {
           start_date?: string | null
           end_date?: string | null
           status?: 'planning' | 'upcoming' | 'completed'
-          budget_amount?: number | null
-          budget_spent?: number
           created_by: string
           created_at?: string
           updated_at?: string
@@ -46,8 +42,6 @@ export interface Database {
           start_date?: string | null
           end_date?: string | null
           status?: 'planning' | 'upcoming' | 'completed'
-          budget_amount?: number | null
-          budget_spent?: number
           created_by?: string
           created_at?: string
           updated_at?: string
@@ -137,7 +131,6 @@ export interface Database {
           id: string
           destination: string
           description: string | null
-          budget_estimate: number | null
           priority: number
           added_by: string
           created_at: string
@@ -147,7 +140,6 @@ export interface Database {
           id?: string
           destination: string
           description?: string | null
-          budget_estimate?: number | null
           priority: number
           added_by: string
           created_at?: string
@@ -157,7 +149,6 @@ export interface Database {
           id?: string
           destination?: string
           description?: string | null
-          budget_estimate?: number | null
           priority?: number
           added_by?: string
           created_at?: string

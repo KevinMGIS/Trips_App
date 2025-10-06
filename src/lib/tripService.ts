@@ -24,8 +24,6 @@ export class TripService {
   // Get trips for a user (trips they own or participate in)
   static async getUserTrips(userId: string): Promise<{ data: Trip[] | null; error: any }> {
     try {
-      console.log('TripService.getUserTrips called with userId:', userId)
-      
       // First, let's just get trips created by the user to simplify
       const { data, error } = await supabase
         .from('trips')
@@ -33,7 +31,6 @@ export class TripService {
         .eq('created_by', userId)
         .order('created_at', { ascending: false })
 
-      console.log('TripService.getUserTrips result:', { data, error })
       return { data, error }
     } catch (error) {
       console.error('Error in getUserTrips:', error)
@@ -108,21 +105,6 @@ export class TripService {
     }
   }
 
-  // Update trip budget spent
-  static async updateBudgetSpent(tripId: string, newAmount: number): Promise<{ error: any }> {
-    try {
-      const { error } = await supabase
-        .from('trips')
-        .update({ budget_spent: newAmount })
-        .eq('id', tripId)
-
-      return { error }
-    } catch (error) {
-      console.error('Error in updateBudgetSpent:', error)
-      return { error }
-    }
-  }
-
   // Get trip statistics
   static async getTripStats(tripId: string): Promise<{ 
     data: { 
@@ -135,9 +117,10 @@ export class TripService {
   }> {
     try {
       // Get bookings count and total cost
+      // Get bookings with their costs
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
-        .select('cost')
+        .select('total_cost')
         .eq('trip_id', tripId)
 
       if (bookingsError) {
@@ -164,7 +147,7 @@ export class TripService {
         return { data: null, error: participantsError }
       }
 
-      const totalSpent = bookings?.reduce((sum, booking) => sum + (booking.cost || 0), 0) || 0
+      const totalSpent = bookings?.reduce((sum, booking) => sum + (booking.total_cost || 0), 0) || 0
 
       return {
         data: {
@@ -178,6 +161,72 @@ export class TripService {
     } catch (error) {
       console.error('Error in getTripStats:', error)
       return { data: null, error }
+    }
+  }
+
+  // ITINERARY ITEM METHODS
+
+  // Get itinerary items for a trip
+  static async getItineraryItems(tripId: string): Promise<{ data: any[] | null; error: any }> {
+    try {
+      const { data, error } = await supabase
+        .from('itinerary_items')
+        .select('*')
+        .eq('trip_id', tripId)
+        .order('start_datetime', { ascending: true })
+
+      return { data, error }
+    } catch (error) {
+      console.error('Error in getItineraryItems:', error)
+      return { data: null, error }
+    }
+  }
+
+  // Create a new itinerary item
+  static async createItineraryItem(itemData: any): Promise<{ data: any | null; error: any }> {
+    try {
+      const { data, error } = await supabase
+        .from('itinerary_items')
+        .insert([itemData])
+        .select('*')
+        .single()
+
+      return { data, error }
+    } catch (error) {
+      console.error('Error in createItineraryItem:', error)
+      return { data: null, error }
+    }
+  }
+
+  // Update an itinerary item
+  static async updateItineraryItem(itemId: string, updates: any): Promise<{ data: any | null; error: any }> {
+    try {
+      const { data, error } = await supabase
+        .from('itinerary_items')
+        .update(updates)
+        .eq('id', itemId)
+        .select('*')
+        .single()
+
+      return { data, error }
+    } catch (error) {
+      console.error('Error in updateItineraryItem:', error)
+      return { data: null, error }
+    }
+  }
+
+  // Delete an itinerary item
+  static async deleteItineraryItem(itemId: string): Promise<{ error: any }> {
+    try {
+      const { error } = await supabase
+        .from('itinerary_items')
+        .delete()
+        .eq('id', itemId)
+
+      return { error }
+    } catch (error) {
+      console.error('Error in deleteItineraryItem:', error)
+      return { error }
     }
   }
 }

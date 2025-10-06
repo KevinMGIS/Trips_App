@@ -20,8 +20,6 @@ export interface Trip {
   destination_lng?: number
   start_date: string
   end_date: string
-  budget_total?: number
-  budget_spent?: number
   status: 'planning' | 'booked' | 'in_progress' | 'completed' | 'cancelled'
   cover_image_url?: string
   created_by: string
@@ -38,8 +36,6 @@ export interface NewTrip {
   destination_lng?: number
   start_date: string
   end_date: string
-  budget_total?: number
-  budget_spent?: number
   status: 'planning' | 'booked' | 'in_progress' | 'completed' | 'cancelled'
   cover_image_url?: string
   created_by: string
@@ -133,7 +129,6 @@ export interface CreateTripData {
   destination_lng?: number
   start_date: string
   end_date: string
-  budget_total?: number
   cover_image_url?: string
 }
 
