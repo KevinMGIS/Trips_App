@@ -24,12 +24,16 @@ export class TripService {
   // Get trips for a user (trips they own or participate in)
   static async getUserTrips(userId: string): Promise<{ data: Trip[] | null; error: any }> {
     try {
+      console.log('TripService.getUserTrips called with userId:', userId)
+      
+      // First, let's just get trips created by the user to simplify
       const { data, error } = await supabase
         .from('trips')
         .select('*')
-        .or(`created_by.eq.${userId},trip_participants.user_id.eq.${userId}`)
+        .eq('created_by', userId)
         .order('created_at', { ascending: false })
 
+      console.log('TripService.getUserTrips result:', { data, error })
       return { data, error }
     } catch (error) {
       console.error('Error in getUserTrips:', error)

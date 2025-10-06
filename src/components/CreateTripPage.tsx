@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, MapPin, Calendar, DollarSign, Image, Save } from 'lucide-react'
+import { MapPin, Calendar, DollarSign, Image, Save } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+
 import { useAuth } from '../contexts/AuthContext'
+import Header from './Header'
 import { cn } from '../lib/utils'
 import { TripService } from '../lib/tripService'
-import AnimatedLogo from './AnimatedLogo'
-import { AnimatedButton, FloatingElement } from './PageTransition'
+
+import { AnimatedButton } from './PageTransition'
 
 interface TripFormData {
   title: string
@@ -145,42 +147,15 @@ export default function CreateTripPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <motion.div 
-        className="bg-white border-b border-gray-200"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="container-mobile py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <AnimatedButton
-                onClick={() => navigate('/')}
-                variant="ghost"
-                className="p-2"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </AnimatedButton>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Create New Trip</h1>
-                <p className="text-sm text-gray-600">Plan your next adventure</p>
-              </div>
-            </div>
-            <FloatingElement delay={0.5}>
-              <AnimatedLogo size={40} showText={false} />
-            </FloatingElement>
-          </div>
-        </div>
-      </motion.div>
+      <Header />
 
       {/* Form */}
-      <div className="container-mobile py-8">
+      <div className="container py-8 md:py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="max-w-2xl mx-auto"
+          className="max-w-4xl mx-auto"
         >
           <motion.form 
             onSubmit={handleSubmit} 
@@ -200,7 +175,7 @@ export default function CreateTripPage() {
           >
             {/* Trip Details Card */}
             <motion.div 
-              className="card p-6"
+              className="card p-6 md:p-8"
               variants={{
                 hidden: { opacity: 0, y: 20 },
                 visible: { opacity: 1, y: 0 }
@@ -275,7 +250,7 @@ export default function CreateTripPage() {
 
             {/* Dates Card */}
             <motion.div 
-              className="card p-6"
+              className="card p-6 md:p-8"
               variants={{
                 hidden: { opacity: 0, y: 20 },
                 visible: { opacity: 1, y: 0 }
@@ -343,7 +318,7 @@ export default function CreateTripPage() {
 
             {/* Budget Card */}
             <motion.div 
-              className="card p-6"
+              className="card p-6 md:p-8"
               variants={{
                 hidden: { opacity: 0, y: 20 },
                 visible: { opacity: 1, y: 0 }
