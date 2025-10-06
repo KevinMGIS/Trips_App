@@ -5,6 +5,7 @@ import LoginPage from './components/LoginPage'
 import CreateTripPage from './components/CreateTripPage'
 import TripDetailPage from './components/TripDetailPage'
 import Header from './components/Header'
+import LocationMap from './components/LocationMap'
 import AnimatedLogo from './components/AnimatedLogo'
 import './index.css'
 import { useState, useEffect } from 'react'
@@ -85,12 +86,20 @@ function TripCard({ trip }: { trip: Trip }) {
       transition={{ duration: 0.2 }}
       onClick={() => navigate(`/trips/${trip.id}`)}
     >
-      {trip.cover_image_url && (
+      {trip.cover_image_url ? (
         <div className="aspect-video w-full bg-gradient-to-r from-orange-400 to-pink-400 rounded-t-xl mb-4">
           <img 
             src={trip.cover_image_url} 
             alt={trip.title}
             className="w-full h-full object-cover rounded-t-xl"
+          />
+        </div>
+      ) : (
+        <div className="mb-4">
+          <LocationMap 
+            destination={trip.destination} 
+            className="w-full rounded-t-xl" 
+            height="h-32"
           />
         </div>
       )}
