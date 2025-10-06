@@ -10,7 +10,6 @@ import { useAuth } from '../contexts/AuthContext'
 import { TripService } from '../lib/tripService'
 import type { Trip, ItineraryItem } from '../types/database'
 import Header from './Header'
-import Weather from './Weather'
 
 // Timeline Item Component
 function TimelineItem({ item, onEdit, onDelete }: { 
@@ -713,9 +712,6 @@ export default function TripDetailPage() {
                     <p className="text-gray-600 leading-relaxed">{trip.description}</p>
                   </div>
                 )}
-
-                {/* Weather Forecast */}
-                <Weather location={trip.destination} />
 
                 {/* Complete Trip Timeline */}
                 <div className="space-y-6">

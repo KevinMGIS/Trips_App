@@ -5,7 +5,6 @@ import LoginPage from './components/LoginPage'
 import CreateTripPage from './components/CreateTripPage'
 import TripDetailPage from './components/TripDetailPage'
 import Header from './components/Header'
-import LocationMap from './components/LocationMap'
 import AnimatedLogo from './components/AnimatedLogo'
 import './index.css'
 import { useState, useEffect } from 'react'
@@ -47,12 +46,12 @@ function TripCard({ trip }: { trip: Trip }) {
   
   const getStatusColor = (status: Trip['status']) => {
     switch (status) {
-      case 'planning': return 'bg-blue-100 text-blue-700 border-blue-200'
-      case 'booked': return 'bg-green-100 text-green-700 border-green-200'
-      case 'in_progress': return 'bg-orange-100 text-orange-700 border-orange-200'
-      case 'completed': return 'bg-gray-100 text-gray-700 border-gray-200'
-      case 'cancelled': return 'bg-red-100 text-red-700 border-red-200'
-      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+      case 'planning': return 'bg-blue-500/90 text-white border-blue-300'
+      case 'booked': return 'bg-green-500/90 text-white border-green-300'
+      case 'in_progress': return 'bg-orange-500/90 text-white border-orange-300'
+      case 'completed': return 'bg-gray-500/90 text-white border-gray-300'
+      case 'cancelled': return 'bg-red-500/90 text-white border-red-300'
+      default: return 'bg-gray-500/90 text-white border-gray-300'
     }
   }
 
@@ -87,54 +86,87 @@ function TripCard({ trip }: { trip: Trip }) {
       onClick={() => navigate(`/trips/${trip.id}`)}
     >
       {trip.cover_image_url ? (
-        <div className="aspect-video w-full bg-gradient-to-r from-orange-400 to-pink-400 rounded-t-xl mb-4">
+        <div className="aspect-video w-full bg-gradient-to-r from-orange-400 via-orange-500 to-red-400 rounded-t-xl mb-4 relative overflow-hidden">
           <img 
             src={trip.cover_image_url} 
             alt={trip.title}
             className="w-full h-full object-cover rounded-t-xl"
           />
+          {/* Status badge overlay */}
+          <div className="absolute top-3 right-3">
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${getStatusColor(trip.status)}`}>
+              {trip.status.replace('_', ' ')}
+            </span>
+          </div>
         </div>
       ) : (
-        <div className="mb-4">
-          <LocationMap 
-            destination={trip.destination} 
-            className="w-full rounded-t-xl" 
-            height="h-32"
-          />
+        <div className="aspect-video w-full bg-gradient-to-br from-orange-400 via-orange-500 to-amber-500 rounded-t-xl mb-4 relative flex items-center justify-center overflow-hidden">
+          {/* Dynamic background pattern */}
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-4 left-4 w-8 h-8 bg-white rounded-full animate-pulse"></div>
+            <div className="absolute bottom-6 right-8 w-6 h-6 bg-white rounded-full animate-pulse delay-300"></div>
+            <div className="absolute top-8 right-6 w-4 h-4 bg-white rounded-full animate-pulse delay-500"></div>
+            <div className="absolute bottom-4 left-8 w-5 h-5 bg-white rounded-full animate-pulse delay-700"></div>
+          </div>
+          
+          {/* Center content */}
+          <div className="text-center text-white z-10">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <MapPin className="w-12 h-12 mx-auto mb-2 drop-shadow-lg" />
+              <p className="text-lg font-bold drop-shadow-md">{trip.destination}</p>
+              <p className="text-sm opacity-90">{trip.title}</p>
+            </motion.div>
+          </div>
+          
+          {/* Status badge overlay */}
+          <div className="absolute top-3 right-3">
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${getStatusColor(trip.status)}`}>
+              {trip.status.replace('_', ' ')}
+            </span>
+          </div>
         </div>
       )}
       
       <div className="p-6">
-        <div className="flex items-start justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">{trip.title}</h3>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(trip.status)}`}>
-            {trip.status.replace('_', ' ')}
-          </span>
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 line-clamp-1 mb-1">{trip.title}</h3>
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+              <MapPin className="w-4 h-4 text-gray-400" />
+              <span className="line-clamp-1">{trip.destination}</span>
+            </div>
+          </div>
         </div>
         
-        <div className="space-y-2 mb-4">
+        <div className="space-y-3 mb-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <MapPin className="w-4 h-4" />
-            <span className="line-clamp-1">{trip.destination}</span>
-          </div>
-          
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Calendar className="w-4 h-4" />
+            <Calendar className="w-4 h-4 text-gray-400" />
             <span>{formatDate(trip.start_date)} - {formatDate(trip.end_date)}</span>
           </div>
           
-
+          {daysUntil > 0 && trip.status !== 'completed' && (
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="w-4 h-4 text-orange-500" />
+              <span className="text-orange-600 font-medium">
+                {daysUntil === 1 ? 'Tomorrow!' : `${daysUntil} days to go`}
+              </span>
+            </div>
+          )}
+          
+          {trip.status === 'completed' && (
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <Clock className="w-4 h-4" />
+              <span className="font-medium">Trip completed</span>
+            </div>
+          )}
         </div>
 
-        {daysUntil > 0 && trip.status !== 'completed' && (
-          <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg">
-            <Clock className="w-4 h-4" />
-            <span>{daysUntil} days to go</span>
-          </div>
-        )}
-        
         {trip.description && (
-          <p className="text-sm text-gray-600 mt-3 line-clamp-2">{trip.description}</p>
+          <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{trip.description}</p>
         )}
       </div>
     </motion.div>
@@ -202,15 +234,31 @@ function Dashboard() {
     return new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
   }
 
-  // Calculate stats and group trips
-  const upcomingTrips = trips.filter(trip => 
-    parseDate(trip.start_date) > new Date() && trip.status !== 'cancelled'
-  )
-  const inProgressTrips = trips.filter(trip => trip.status === 'in_progress')
-  const completedTrips = trips.filter(trip => trip.status === 'completed')
-  const pastTrips = trips.filter(trip => 
-    parseDate(trip.end_date) < new Date() && trip.status !== 'in_progress'
-  )
+  // Helper function to get days until trip
+  const getDaysUntilTrip = (startDate: string) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tripDate = parseDate(startDate)
+    const diffTime = tripDate.getTime() - today.getTime()
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  }
+
+  // Calculate stats and group trips - sorted by closest date first
+  const upcomingTrips = trips
+    .filter(trip => parseDate(trip.start_date) > new Date() && trip.status !== 'cancelled')
+    .sort((a, b) => getDaysUntilTrip(a.start_date) - getDaysUntilTrip(b.start_date))
+    
+  const inProgressTrips = trips
+    .filter(trip => trip.status === 'in_progress')
+    .sort((a, b) => parseDate(a.start_date).getTime() - parseDate(b.start_date).getTime())
+    
+  const completedTrips = trips
+    .filter(trip => trip.status === 'completed')
+    .sort((a, b) => parseDate(b.end_date).getTime() - parseDate(a.end_date).getTime()) // Most recent first
+    
+  const pastTrips = trips
+    .filter(trip => parseDate(trip.end_date) < new Date() && trip.status !== 'in_progress')
+    .sort((a, b) => parseDate(b.end_date).getTime() - parseDate(a.end_date).getTime()) // Most recent first
 
   return (
     <>
