@@ -4,12 +4,31 @@ import { motion } from 'framer-motion'
 import { 
   ArrowLeft, Calendar, MapPin, DollarSign, Clock,
   Plus, Edit, Trash2, Plane, Hotel, Car, Camera,
-  CheckCircle, Circle, X
+  CheckCircle, Circle, X, GripVertical
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { TripService } from '../lib/tripService'
 import type { Trip, ItineraryItem } from '../types/database'
 import Header from './Header'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import {
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 // Helper function to format time in local timezone
 const formatLocalTime = (dateTimeString: string) => {
@@ -117,6 +136,120 @@ function TimelineItem({ item, onEdit, onDelete }: {
         </div>
       </div>
     </motion.div>
+  )
+}
+
+// Sortable Timeline Item Component with drag handle
+function SortableTimelineItem({ item, onEdit, onDelete }: { 
+  item: ItineraryItem
+  onEdit: (item: ItineraryItem) => void
+  onDelete: (id: string) => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  const getIcon = (category: string) => {
+    switch (category) {
+      case 'flight': return <Plane className="w-4 h-4" />
+      case 'accommodation': return <Hotel className="w-4 h-4" />
+      case 'transport': return <Car className="w-4 h-4" />
+      case 'activity': return <Camera className="w-4 h-4" />
+      default: return <Circle className="w-4 h-4" />
+    }
+  }
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'flight': return 'bg-blue-50 text-blue-700 border-blue-200'
+      case 'accommodation': return 'bg-green-50 text-green-700 border-green-200'
+      case 'transport': return 'bg-purple-50 text-purple-700 border-purple-200'
+      case 'activity': return 'bg-orange-50 text-orange-700 border-orange-200'
+      default: return 'bg-gray-50 text-gray-700 border-gray-200'
+    }
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-white rounded-xl border transition-all duration-200 group ${
+        isDragging 
+          ? 'border-orange-300 shadow-lg rotate-1 scale-105' 
+          : 'border-gray-200 p-5 hover:shadow-md hover:border-orange-200'
+      }`}
+    >
+      <div className="flex items-start justify-between">
+        {/* Drag Handle */}
+        <div
+          {...attributes}
+          {...listeners}
+          className={`flex items-center justify-center p-2 -ml-3 mr-2 rounded-lg cursor-grab active:cursor-grabbing transition-all duration-200 ${
+            isDragging 
+              ? 'text-orange-500 bg-orange-50' 
+              : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50 opacity-0 group-hover:opacity-100'
+          }`}
+          title="Drag to reorder"
+        >
+          <GripVertical className="w-5 h-5" />
+        </div>
+        
+        <div className={`flex items-start gap-4 flex-1 ${isDragging ? 'p-5' : ''}`}>
+          <div className={`p-2 rounded-lg border ${getCategoryColor(item.category)}`}>
+            {getIcon(item.category)}
+          </div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-gray-900 mb-1">{item.title}</h4>
+            {item.description && (
+              <p className="text-sm text-gray-600 mb-3">{item.description}</p>
+            )}
+            <div className="flex items-center gap-4 text-sm text-gray-500">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {formatLocalTime(item.start_datetime)}
+              </span>
+              {item.location && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {item.location}
+                </span>
+              )}
+              {item.cost && (
+                <span className="flex items-center gap-1">
+                  <DollarSign className="w-3 h-3" />
+                  ${item.cost}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className={`flex items-center gap-1 ${isDragging ? 'p-5 pl-0' : ''}`}>
+          <button
+            onClick={() => onEdit(item)}
+            className="p-2 text-gray-400 hover:text-orange-500 rounded-lg transition-colors"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => onDelete(item.id)}
+            className="p-2 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -391,6 +524,91 @@ export default function TripDetailPage() {
     notes: '',
     booking_url: ''
   })
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  // Handle drag end for reordering itinerary items
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    setItineraryItems((items) => {
+      const oldIndex = items.findIndex((item) => item.id === active.id)
+      const newIndex = items.findIndex((item) => item.id === over.id)
+      
+      const reorderedItems = arrayMove(items, oldIndex, newIndex)
+      
+      // Apply smart time updates to reordered items
+      const itemsWithUpdatedTimes = applySmartTimeUpdates(reorderedItems)
+      
+      // Save the new order and times to database
+      saveItemOrder(itemsWithUpdatedTimes)
+      
+      return itemsWithUpdatedTimes
+    })
+  }
+
+  // Apply smart time updates based on item positions
+  const applySmartTimeUpdates = (items: ItineraryItem[]): ItineraryItem[] => {
+    return items.map((item, index) => {
+      // Skip time updates for items that already have specific times (not 12:00:00 flexible)
+      const currentTime = item.start_datetime.split('T')[1]
+      if (currentTime && !currentTime.startsWith('12:00')) {
+        return item // Keep original time if it's a specific time
+      }
+
+      // Calculate suggested time based on position
+      let suggestedTime = '12:00:00' // Default for flexible times
+      
+      if (index === 0) {
+        // First item: suggest morning start
+        suggestedTime = '09:00:00'
+      } else if (index < items.length - 1) {
+        // Middle items: distribute throughout the day
+        const hourOffset = Math.min(index * 2, 8) // Max 8 hour spread
+        const baseHour = 9 + hourOffset
+        suggestedTime = `${baseHour.toString().padStart(2, '0')}:00:00`
+      } else {
+        // Last item: suggest afternoon/evening
+        suggestedTime = '17:00:00'
+      }
+
+      // Update the start_datetime with new time while keeping the date
+      const datePart = item.start_datetime.split('T')[0]
+      return {
+        ...item,
+        start_datetime: `${datePart}T${suggestedTime}`
+      }
+    })
+  }
+
+  // Save the new order and times to database
+  const saveItemOrder = async (reorderedItems: ItineraryItem[]) => {
+    try {
+      // Update each item's timing in the database
+      const updatePromises = reorderedItems.map(async (item) => {
+        return TripService.updateItineraryItem(item.id, {
+          start_datetime: item.start_datetime,
+          end_datetime: item.end_datetime,
+        })
+      })
+
+      await Promise.all(updatePromises)
+      console.log('Successfully updated item order and times')
+    } catch (error) {
+      console.error('Error saving item order:', error)
+      // Optionally, you could show a toast notification to the user
+    }
+  }
 
   useEffect(() => {
     if (id) {
@@ -716,6 +934,79 @@ export default function TripDetailPage() {
     )
   }
 
+  // Group itinerary items by day and render with day headers
+  const renderItineraryByDays = () => {
+    if (!trip) return null
+
+    // Group items by date
+    const itemsByDate = itineraryItems.reduce((acc, item) => {
+      const dateKey = item.start_datetime.split('T')[0]
+      if (!acc[dateKey]) {
+        acc[dateKey] = []
+      }
+      acc[dateKey].push(item)
+      return acc
+    }, {} as Record<string, ItineraryItem[]>)
+
+    // Sort dates chronologically
+    const sortedDates = Object.keys(itemsByDate).sort()
+
+    // Calculate trip start date for day numbering
+    const tripStartDate = new Date(trip.start_date.split('T')[0])
+
+    return (
+      <div className="space-y-6">
+        {sortedDates.map((dateKey) => {
+          const itemsForDate = itemsByDate[dateKey].sort(
+            (a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime()
+          )
+          
+          // Calculate day number
+          const currentDate = new Date(dateKey)
+          const dayNumber = Math.ceil((currentDate.getTime() - tripStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+          
+          // Format date for display
+          const displayDate = currentDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric'
+          })
+
+          return (
+            <div key={dateKey} className="space-y-4">
+              {/* Day Header */}
+              <div className="flex items-center gap-3 pb-3 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="bg-orange-100 text-orange-700 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
+                    {dayNumber}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Day {dayNumber}
+                    </h3>
+                    <p className="text-sm text-gray-600">{displayDate}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Items for this day */}
+              <div className="space-y-4 pl-11">
+                {itemsForDate.map((item) => (
+                  <SortableTimelineItem
+                    key={item.id}
+                    item={item}
+                    onEdit={handleEditItem}
+                    onDelete={handleDeleteItem}
+                  />
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
   return (
     <>
       <Header />
@@ -1018,16 +1309,18 @@ export default function TripDetailPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {itineraryItems.map((item) => (
-                      <TimelineItem
-                        key={item.id}
-                        item={item}
-                        onEdit={handleEditItem}
-                        onDelete={handleDeleteItem}
-                      />
-                    ))}
-                  </div>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={itineraryItems.map(item => item.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {renderItineraryByDays()}
+                    </SortableContext>
+                  </DndContext>
                 )}
               </div>
             )}
