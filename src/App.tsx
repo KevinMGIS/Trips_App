@@ -1,7 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import LoginPage from './components/LoginPage'
+import CreateTripPage from './components/CreateTripPage'
 import AnimatedLogo from './components/AnimatedLogo'
 import './index.css'
 
@@ -36,6 +37,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // Main Dashboard (placeholder)
 function Dashboard() {
   const { signOut, user } = useAuth()
+  const navigate = useNavigate()
 
   return (
     <motion.div 
@@ -90,39 +92,21 @@ function Dashboard() {
               whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.2 }}
             >
-              <h3 className="font-semibold text-orange-700 mb-2">What's Next?</h3>
-              <motion.ul 
-                className="text-sm text-orange-600 space-y-1"
-                initial="hidden"
-                animate="visible"
-                variants={{
-                  hidden: { opacity: 0 },
-                  visible: {
-                    opacity: 1,
-                    transition: {
-                      staggerChildren: 0.1,
-                      delayChildren: 1
-                    }
-                  }
-                }}
+              <h3 className="font-semibold text-orange-700 mb-2">Ready to plan your next adventure?</h3>
+              <p className="text-sm text-orange-600 mb-4">
+                Create your first trip and start planning something amazing!
+              </p>
+              <motion.button
+                onClick={() => navigate('/create-trip')}
+                className="btn-primary w-full"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4, delay: 1.0 }}
               >
-                {[
-                  '• Set up your Supabase database',
-                  '• Create your first trip', 
-                  '• Invite your partner',
-                  '• Start planning adventures!'
-                ].map((item, index) => (
-                  <motion.li
-                    key={index}
-                    variants={{
-                      hidden: { opacity: 0, x: -10 },
-                      visible: { opacity: 1, x: 0 }
-                    }}
-                  >
-                    {item}
-                  </motion.li>
-                ))}
-              </motion.ul>
+                Create Your First Trip
+              </motion.button>
             </motion.div>
             
             <motion.button
@@ -151,6 +135,22 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route
             path="/"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create-trip"
+            element={
+              <ProtectedRoute>
+                <CreateTripPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/trips"
             element={
               <ProtectedRoute>
                 <Dashboard />

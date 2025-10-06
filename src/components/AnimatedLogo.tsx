@@ -145,8 +145,8 @@ export default function AnimatedLogo({ size = 80, className = '', showText = tru
           r="2"
           fill="#ffffff"
           opacity="0.9"
-          initial={{ offsetDistance: "0%" }}
-          animate={{ offsetDistance: "100%" }}
+          initial={{ "--offset-distance": "0%" } as any}
+          animate={{ "--offset-distance": "100%" } as any}
           transition={{
             duration: 2.5,
             delay: 0.5,
@@ -156,8 +156,9 @@ export default function AnimatedLogo({ size = 80, className = '', showText = tru
           }}
           style={{
             offsetPath: `path('${pathData}')`,
-            offsetRotate: 'auto'
-          }}
+            offsetRotate: 'auto',
+            offsetDistance: 'var(--offset-distance)'
+          } as any}
         />
       </motion.svg>
 

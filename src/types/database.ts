@@ -29,6 +29,22 @@ export interface Trip {
   updated_at: string
 }
 
+// Type for creating a new trip (without id, created_at, updated_at)
+export interface NewTrip {
+  title: string
+  description?: string
+  destination: string
+  destination_lat?: number
+  destination_lng?: number
+  start_date: string
+  end_date: string
+  budget_total?: number
+  budget_spent?: number
+  status: 'planning' | 'booked' | 'in_progress' | 'completed' | 'cancelled'
+  cover_image_url?: string
+  created_by: string
+}
+
 export interface TripParticipant {
   id: string
   trip_id: string
