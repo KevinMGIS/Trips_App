@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Inter font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@layer base {
+  /* Base typography and colors */
+  html {
+    @apply text-body text-text-primary;
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: 'opsz' 32;
+  }
+  
+  body {
+    @apply bg-background font-sans antialiased;
+  }
+
+  /* Ensure good defaults for interactive elements */
+  button, 
+  [role="button"] {
+    @apply focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-background;
+  }
+
+  input,
+  textarea,
+  select {
+    @apply focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500;
+  }
+}
+
+@layer components {
+  /* Card components */
+  .card {
+    @apply bg-surface rounded-card shadow-card border border-border;
+  }
+  
+  .card-hover {
+    @apply card hover:shadow-card-hover transition-shadow duration-200;
+  }
+
+  /* Button components */
+  .btn-primary {
+    @apply bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-button transition-colors duration-200 shadow-button;
+  }
+  
+  .btn-secondary {
+    @apply bg-surface hover:bg-orange-50 text-orange-500 border border-orange-500 font-semibold py-3 px-6 rounded-button transition-colors duration-200;
+  }
+  
+  .btn-ghost {
+    @apply text-orange-500 hover:text-orange-600 hover:bg-orange-50 font-semibold py-2 px-4 rounded-button transition-colors duration-200;
+  }
+
+  /* Input components */
+  .input {
+    @apply w-full px-4 py-3 bg-surface border border-border rounded-button text-text-primary placeholder-text-tertiary focus:border-orange-500 focus:ring-orange-500 transition-colors duration-200;
+  }
+
+  /* Status badges */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-caption font-semibold uppercase tracking-wide;
+  }
+  
+  .badge-orange {
+    @apply badge bg-orange-50 text-orange-600;
+  }
+  
+  .badge-grey {
+    @apply badge bg-surface-secondary text-text-secondary;
+  }
+
+  /* Navigation components */
+  .nav-item {
+    @apply flex flex-col items-center py-2 px-3 text-text-secondary transition-colors duration-200;
+  }
+  
+  .nav-item-active {
+    @apply nav-item text-orange-500;
+  }
+
+  /* Progress components */
+  .progress-bar {
+    @apply w-full h-2 bg-border rounded-full overflow-hidden;
+  }
+  
+  .progress-fill {
+    @apply h-full bg-gradient-to-r from-orange-500 to-orange-400 transition-all duration-300 ease-out;
+  }
+
+  /* Loading states */
+  .skeleton {
+    @apply animate-pulse bg-surface-secondary rounded;
+  }
+
+  /* Layout utilities */
+  .container-mobile {
+    @apply max-w-sm mx-auto px-4;
+  }
+  
+  .container-desktop {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
+
+@layer utilities {
+  /* Typography utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Interaction utilities */
+  .tap-highlight-none {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Custom gradients */
+  .gradient-orange {
+    background: linear-gradient(135deg, #FF6B35 0%, #FF916D 100%);
+  }
+
+  /* Safe area utilities for mobile */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* iOS-style scrolling */
+  .smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+}
