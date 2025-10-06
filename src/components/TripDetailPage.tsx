@@ -11,6 +11,32 @@ import { TripService } from '../lib/tripService'
 import type { Trip, ItineraryItem } from '../types/database'
 import Header from './Header'
 
+// Helper function to format time in local timezone
+const formatLocalTime = (dateTimeString: string) => {
+  // Handle different datetime string formats and ensure local timezone interpretation
+  let date: Date
+  
+  if (dateTimeString.includes('T')) {
+    // ISO format: remove timezone indicator to treat as local
+    const localDateString = dateTimeString.replace(/[Z]$/, '').replace(/[+\-]\d{2}:\d{2}$/, '')
+    date = new Date(localDateString)
+    
+    // Check if this is a flexible time entry (12:00:00) indicating unknown/flexible timing
+    const timeString = localDateString.split('T')[1] || '12:00:00'
+    if (timeString.startsWith('12:00')) {
+      return 'Flexible'
+    }
+  } else {
+    // Simple format, should already be local
+    date = new Date(dateTimeString)
+  }
+  
+  return date.toLocaleTimeString([], { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  })
+}
+
 // Refined Timeline Item Component
 function TimelineItem({ item, onEdit, onDelete }: { 
   item: ItineraryItem
@@ -58,10 +84,7 @@ function TimelineItem({ item, onEdit, onDelete }: {
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                {new Date(item.start_datetime).toLocaleTimeString([], { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
+                {formatLocalTime(item.start_datetime)}
               </span>
               {item.location && (
                 <span className="flex items-center gap-1">
@@ -113,10 +136,8 @@ function AccommodationCard({ accommodation, onEdit, onDelete }: {
   }
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    })
+    const result = formatLocalTime(dateString)
+    return result === 'Flexible' ? '—' : result
   }
 
   const getNumberOfNights = () => {
@@ -350,8 +371,10 @@ export default function TripDetailPage() {
     title: '',
     description: '',
     category: 'flight' as ItineraryItem['category'],
-    start_datetime: '',
-    end_datetime: '',
+    start_date: '',
+    start_time: '',
+    end_date: '',
+    end_time: '',
     location: '',
     cost: '',
     confirmation_number: '',
@@ -424,12 +447,28 @@ export default function TripDetailPage() {
 
   const handleEditItem = (item: ItineraryItem) => {
     setEditingItem(item)
+    
+    // Parse the existing datetime into date and time parts
+    const startDate = new Date(item.start_datetime)
+    const startDateStr = startDate.toISOString().split('T')[0]
+    const startTimeStr = startDate.toTimeString().substring(0, 5)
+    
+    let endDateStr = ''
+    let endTimeStr = ''
+    if (item.end_datetime) {
+      const endDate = new Date(item.end_datetime)
+      endDateStr = endDate.toISOString().split('T')[0]
+      endTimeStr = endDate.toTimeString().substring(0, 5)
+    }
+    
     setItineraryForm({
       title: item.title,
       description: item.description || '',
       category: item.category,
-      start_datetime: item.start_datetime.split('.')[0], // Remove milliseconds for datetime-local input
-      end_datetime: item.end_datetime?.split('.')[0] || '',
+      start_date: startDateStr,
+      start_time: startTimeStr,
+      end_date: endDateStr,
+      end_time: endTimeStr,
       location: item.location || '',
       cost: item.cost?.toString() || '',
       confirmation_number: item.confirmation_number || '',
@@ -450,8 +489,10 @@ export default function TripDetailPage() {
       title: '',
       description: '',
       category: 'flight',
-      start_datetime: '',
-      end_datetime: '',
+      start_date: '',
+      start_time: '',
+      end_date: '',
+      end_time: '',
       location: '',
       cost: '',
       confirmation_number: '',
@@ -464,13 +505,27 @@ export default function TripDetailPage() {
     if (!trip || !user) return
 
     try {
+      // Combine date and time fields into datetime format
+      const createDateTime = (date: string, time: string) => {
+        if (!date) return null
+        if (!time) {
+          // If no time specified, use 12:00 (midday) for better sorting
+          // We'll track that this was originally a flexible time
+          return `${date}T12:00:00`
+        }
+        return `${date}T${time}:00`
+      }
+
+      const startDateTime = createDateTime(itineraryForm.start_date, itineraryForm.start_time)
+      const endDateTime = itineraryForm.end_date ? createDateTime(itineraryForm.end_date, itineraryForm.end_time) : null
+
       const itemData = {
         trip_id: trip.id,
         title: itineraryForm.title,
         description: itineraryForm.description || null,
         category: itineraryForm.category,
-        start_datetime: itineraryForm.start_datetime,
-        end_datetime: itineraryForm.end_datetime || null,
+        start_datetime: startDateTime,
+        end_datetime: endDateTime,
         location: itineraryForm.location || null,
         cost: itineraryForm.cost ? parseFloat(itineraryForm.cost) : null,
         confirmation_number: itineraryForm.confirmation_number || null,
@@ -1195,25 +1250,53 @@ export default function TripDetailPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Start Date & Time *
+                      Date *
                     </label>
                     <input
-                      type="datetime-local"
-                      value={itineraryForm.start_datetime}
-                      onChange={(e) => setItineraryForm(prev => ({ ...prev, start_datetime: e.target.value }))}
+                      type="date"
+                      value={itineraryForm.start_date}
+                      onChange={(e) => setItineraryForm(prev => ({ ...prev, start_date: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      End Date & Time
+                      Time <span className="text-gray-500">(optional)</span>
                     </label>
                     <input
-                      type="datetime-local"
-                      value={itineraryForm.end_datetime}
-                      onChange={(e) => setItineraryForm(prev => ({ ...prev, end_datetime: e.target.value }))}
+                      type="time"
+                      value={itineraryForm.start_time}
+                      onChange={(e) => setItineraryForm(prev => ({ ...prev, start_time: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="Leave empty for all-day event"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      End Date <span className="text-gray-500">(optional)</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={itineraryForm.end_date}
+                      onChange={(e) => setItineraryForm(prev => ({ ...prev, end_date: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      End Time <span className="text-gray-500">(optional)</span>
+                    </label>
+                    <input
+                      type="time"
+                      value={itineraryForm.end_time}
+                      onChange={(e) => setItineraryForm(prev => ({ ...prev, end_time: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      disabled={!itineraryForm.end_date}
                     />
                   </div>
                 </div>
