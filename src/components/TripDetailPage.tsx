@@ -11,7 +11,7 @@ import { TripService } from '../lib/tripService'
 import type { Trip, ItineraryItem } from '../types/database'
 import Header from './Header'
 
-// Timeline Item Component
+// Refined Timeline Item Component
 function TimelineItem({ item, onEdit, onDelete }: { 
   item: ItineraryItem
   onEdit: (item: ItineraryItem) => void
@@ -29,32 +29,33 @@ function TimelineItem({ item, onEdit, onDelete }: {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'flight': return 'bg-blue-100 text-blue-700 border-blue-200'
-      case 'accommodation': return 'bg-green-100 text-green-700 border-green-200'
-      case 'transport': return 'bg-purple-100 text-purple-700 border-purple-200'
-      case 'activity': return 'bg-orange-100 text-orange-700 border-orange-200'
-      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+      case 'flight': return 'bg-blue-50 text-blue-700 border-blue-200'
+      case 'accommodation': return 'bg-green-50 text-green-700 border-green-200'
+      case 'transport': return 'bg-purple-50 text-purple-700 border-purple-200'
+      case 'activity': return 'bg-orange-50 text-orange-700 border-orange-200'
+      default: return 'bg-gray-50 text-gray-700 border-gray-200'
     }
   }
 
   return (
     <motion.div
-      className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow"
+      className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-orange-200 transition-all duration-200"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -1 }}
+      layout
     >
       <div className="flex items-start justify-between">
-        <div className="flex items-start gap-3 flex-1">
-          <div className={`p-2 rounded-lg ${getCategoryColor(item.category)}`}>
+        <div className="flex items-start gap-4 flex-1">
+          <div className={`p-2 rounded-lg border ${getCategoryColor(item.category)}`}>
             {getIcon(item.category)}
           </div>
           <div className="flex-1">
             <h4 className="font-semibold text-gray-900 mb-1">{item.title}</h4>
             {item.description && (
-              <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+              <p className="text-sm text-gray-600 mb-3">{item.description}</p>
             )}
-            <div className="flex items-center gap-4 text-xs text-gray-500">
+            <div className="flex items-center gap-4 text-sm text-gray-500">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 {new Date(item.start_datetime).toLocaleTimeString([], { 
@@ -80,13 +81,13 @@ function TimelineItem({ item, onEdit, onDelete }: {
         <div className="flex items-center gap-1">
           <button
             onClick={() => onEdit(item)}
-            className="p-1 text-gray-400 hover:text-orange-500 transition-colors"
+            className="p-2 text-gray-400 hover:text-orange-500 rounded-lg transition-colors"
           >
             <Edit className="w-4 h-4" />
           </button>
           <button
             onClick={() => onDelete(item.id)}
-            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+            className="p-2 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -96,7 +97,7 @@ function TimelineItem({ item, onEdit, onDelete }: {
   )
 }
 
-// Accommodation Card Component
+// Refined Accommodation Card Component
 function AccommodationCard({ accommodation, onEdit, onDelete }: { 
   accommodation: ItineraryItem
   onEdit: (item: ItineraryItem) => void
@@ -129,14 +130,15 @@ function AccommodationCard({ accommodation, onEdit, onDelete }: {
 
   return (
     <motion.div
-      className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow"
+      className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -1 }}
+      layout
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-start gap-3 flex-1">
-          <div className="p-2 rounded-lg bg-green-100 text-green-700 border-green-200">
+          <div className="p-2 rounded-lg bg-green-50 text-green-700 border border-green-200">
             <Hotel className="w-5 h-5" />
           </div>
           <div className="flex-1">
@@ -155,13 +157,13 @@ function AccommodationCard({ accommodation, onEdit, onDelete }: {
         <div className="flex items-center gap-1">
           <button
             onClick={() => onEdit(accommodation)}
-            className="p-2 text-gray-400 hover:text-orange-500 transition-colors"
+            className="p-2 text-gray-400 hover:text-orange-500 rounded-lg transition-colors"
           >
             <Edit className="w-4 h-4" />
           </button>
           <button
             onClick={() => onDelete(accommodation.id)}
-            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+            className="p-2 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -245,33 +247,80 @@ function AccommodationCard({ accommodation, onEdit, onDelete }: {
   )
 }
 
-// Quick Stats Component
+// Refined Quick Stats Component
 function QuickStats({ trip, stats }: { trip: Trip, stats: any }) {
+  const tripDuration = (() => {
+    const [startYear, startMonth, startDay] = trip.start_date.split('T')[0].split('-')
+    const [endYear, endMonth, endDay] = trip.end_date.split('T')[0].split('-')
+    const startDate = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay))
+    const endDate = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay))
+    return Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+  })()
+
+  const totalCost = stats.totalCost || 0
+  const itineraryCount = stats.itineraryItems || 0
+  const accommodationCount = stats.accommodations || 0
+
+  const statsData = [
+    {
+      icon: Calendar,
+      label: 'Trip Duration',
+      value: `${tripDuration} days`,
+      bgColor: 'bg-blue-50',
+      iconColor: 'text-blue-600',
+      borderColor: 'border-blue-100'
+    },
+    {
+      icon: CheckCircle,
+      label: 'Activities',
+      value: itineraryCount.toString(),
+      bgColor: 'bg-orange-50',
+      iconColor: 'text-orange-600',
+      borderColor: 'border-orange-100'
+    },
+    {
+      icon: Hotel,
+      label: 'Accommodations',
+      value: accommodationCount.toString(),
+      bgColor: 'bg-green-50',
+      iconColor: 'text-green-600',
+      borderColor: 'border-green-100'
+    },
+    ...(totalCost > 0 ? [{
+      icon: DollarSign,
+      label: 'Total Cost',
+      value: `$${totalCost.toLocaleString()}`,
+      bgColor: 'bg-amber-50',
+      iconColor: 'text-amber-600',
+      borderColor: 'border-amber-100'
+    }] : [])
+  ]
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div className="bg-white rounded-xl p-4 border border-gray-200">
-        <div className="flex items-center gap-2 mb-2">
-          <Calendar className="w-4 h-4 text-blue-500" />
-          <span className="text-sm font-medium text-gray-600">Duration</span>
-        </div>
-        <p className="text-lg font-bold text-gray-900">
-          {(() => {
-            const [startYear, startMonth, startDay] = trip.start_date.split('T')[0].split('-')
-            const [endYear, endMonth, endDay] = trip.end_date.split('T')[0].split('-')
-            const startDate = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay))
-            const endDate = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay))
-            return Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-          })()} days
-        </p>
-      </div>
-      
-      <div className="bg-white rounded-xl p-4 border border-gray-200">
-        <div className="flex items-center gap-2 mb-2">
-          <CheckCircle className="w-4 h-4 text-orange-500" />
-          <span className="text-sm font-medium text-gray-600">Itinerary Items</span>
-        </div>
-        <p className="text-lg font-bold text-gray-900">{stats.itineraryItems || 0}</p>
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {statsData.map((stat, index) => (
+        <motion.div
+          key={stat.label}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.1 }}
+          whileHover={{ y: -2 }}
+          className="group"
+        >
+          <div className={`${stat.bgColor} ${stat.borderColor} rounded-xl p-4 border hover:shadow-md transition-shadow`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className={`p-2 ${stat.iconColor} bg-white rounded-lg shadow-sm`}>
+                <stat.icon className="w-5 h-5" />
+              </div>
+            </div>
+            
+            <div className="space-y-1">
+              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+              <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+            </div>
+          </div>
+        </motion.div>
+      ))}
     </div>
   )
 }
@@ -561,26 +610,23 @@ export default function TripDetailPage() {
     setShowEditModal(false)
   }
 
-  const formatDate = (dateString: string) => {
-    // Parse date as local date to avoid timezone issues
+  const formatDateShort = (dateString: string) => {
     const [year, month, day] = dateString.split('T')[0].split('-')
     const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
     return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric'
     })
   }
 
-  const getStatusColor = (status: Trip['status']) => {
+  const getStatusColorSubtle = (status: Trip['status']) => {
     switch (status) {
-      case 'planning': return 'bg-blue-100 text-blue-700 border-blue-200'
-      case 'booked': return 'bg-green-100 text-green-700 border-green-200'
-      case 'in_progress': return 'bg-orange-100 text-orange-700 border-orange-200'
-      case 'completed': return 'bg-gray-100 text-gray-700 border-gray-200'
-      case 'cancelled': return 'bg-red-100 text-red-700 border-red-200'
-      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+      case 'planning': return 'bg-blue-50 text-blue-700 border-blue-200'
+      case 'booked': return 'bg-green-50 text-green-700 border-green-200'
+      case 'in_progress': return 'bg-orange-50 text-orange-700 border-orange-200'
+      case 'completed': return 'bg-purple-50 text-purple-700 border-purple-200'
+      case 'cancelled': return 'bg-red-50 text-red-700 border-red-200'
+      default: return 'bg-gray-50 text-gray-700 border-gray-200'
     }
   }
 
@@ -620,53 +666,110 @@ export default function TripDetailPage() {
       <Header />
       <div className="min-h-screen bg-background">
         <div className="container py-8">
-          {/* Trip Header */}
+          {/* Refined Trip Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-            <div className="flex items-center gap-4 mb-6">
-              <button
-                onClick={() => navigate('/')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl font-bold text-gray-900">{trip.title}</h1>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(trip.status)}`}>
-                    {trip.status.replace('_', ' ')}
-                  </span>
-                </div>
-                <div className="flex items-center gap-6 text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    <span>{trip.destination}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>{formatDate(trip.start_date)} - {formatDate(trip.end_date)}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={handleEditTrip}
-                  className="btn-primary flex items-center gap-2"
+            {/* Elegant Header Section */}
+            <div className="relative bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-6 mb-6 border border-orange-100">
+              <div className="flex items-center gap-4 mb-6">
+                <button
+                  onClick={() => navigate('/')}
+                  className="p-2 hover:bg-orange-100 rounded-lg transition-colors"
                 >
-                  <Edit className="w-4 h-4" />
-                  Edit Trip
+                  <ArrowLeft className="w-5 h-5 text-gray-600" />
                 </button>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h1 className="text-3xl font-bold text-gray-900">{trip.title}</h1>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColorSubtle(trip.status)}`}>
+                      {trip.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-6 text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-orange-500" />
+                      <span>{trip.destination}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-orange-500" />
+                      <span>{formatDateShort(trip.start_date)} - {formatDateShort(trip.end_date)}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={handleEditTrip}
+                    className="btn-primary flex items-center gap-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit Trip
+                  </button>
+                </div>
               </div>
+
+              {/* Trip Countdown - More Subtle */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white rounded-xl p-4 border border-orange-200 inline-block"
+              >
+                {(() => {
+                  const today = new Date()
+                  const startDate = new Date(trip.start_date)
+                  const endDate = new Date(trip.end_date)
+                  const daysUntilStart = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                  const daysUntilEnd = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                  
+                  if (daysUntilStart > 0) {
+                    return (
+                      <div className="flex items-center gap-3 text-center">
+                        <Clock className="w-5 h-5 text-orange-500" />
+                        <div>
+                          <div className="text-2xl font-bold text-gray-900">{daysUntilStart}</div>
+                          <div className="text-sm text-gray-600">days until departure</div>
+                        </div>
+                      </div>
+                    )
+                  } else if (daysUntilEnd > 0) {
+                    return (
+                      <div className="flex items-center gap-3 text-center">
+                        <Clock className="w-5 h-5 text-orange-500" />
+                        <div>
+                          <div className="text-2xl font-bold text-gray-900">{daysUntilEnd}</div>
+                          <div className="text-sm text-gray-600">days remaining</div>
+                        </div>
+                      </div>
+                    )
+                  } else {
+                    return (
+                      <div className="flex items-center gap-3 text-center">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <div>
+                          <div className="text-lg font-bold text-gray-900">Trip Complete!</div>
+                          <div className="text-sm text-gray-600">Hope you had a great time</div>
+                        </div>
+                      </div>
+                    )
+                  }
+                })()}
+              </motion.div>
             </div>
 
-            {/* Quick Stats */}
-            <QuickStats trip={trip} stats={stats} />
+            {/* Refined Quick Stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <QuickStats trip={trip} stats={stats} />
+            </motion.div>
           </motion.div>
 
-          {/* Navigation Tabs */}
+          {/* Refined Navigation Tabs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -676,20 +779,29 @@ export default function TripDetailPage() {
             <div className="border-b border-gray-200">
               <nav className="-mb-px flex space-x-8">
                 {[
-                  { id: 'overview', label: 'Overview' },
-                  { id: 'itinerary', label: 'Itinerary' },
-                  { id: 'accommodations', label: 'Accommodations' }
+                  { id: 'overview', label: 'Overview', count: (itineraryItems.length + accommodations.length) },
+                  { id: 'itinerary', label: 'Itinerary', count: itineraryItems.length },
+                  { id: 'accommodations', label: 'Hotels', count: accommodations.length }
                 ].map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
                       activeTab === tab.id
                         ? 'border-orange-500 text-orange-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    {tab.label}
+                    <span>{tab.label}</span>
+                    {tab.count > 0 && (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        activeTab === tab.id
+                          ? 'bg-orange-100 text-orange-600'
+                          : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {tab.count}
+                      </span>
+                    )}
                   </button>
                 ))}
               </nav>
@@ -734,10 +846,12 @@ export default function TripDetailPage() {
                   </div>
 
                   {[...itineraryItems, ...accommodations].length === 0 ? (
-                    <div className="bg-white rounded-2xl p-8 border border-gray-200 text-center">
-                      <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <h4 className="text-lg font-semibold text-gray-900 mb-2">No trip activities planned yet</h4>
-                      <p className="text-gray-600 mb-4">Start building your trip by adding flights, hotels, activities, and more.</p>
+                    <div className="bg-orange-50 rounded-2xl p-8 border border-orange-100 text-center">
+                      <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <Calendar className="w-8 h-8 text-orange-600" />
+                      </div>
+                      <h4 className="text-xl font-semibold text-gray-900 mb-2">Ready to plan something amazing?</h4>
+                      <p className="text-gray-600 mb-6 max-w-md mx-auto">Start building your perfect trip by adding flights, hotels, activities, and experiences.</p>
                       <div className="flex items-center justify-center gap-3">
                         <button 
                           onClick={handleAddItineraryItem}
@@ -835,10 +949,12 @@ export default function TripDetailPage() {
                 </div>
 
                 {itineraryItems.length === 0 ? (
-                  <div className="bg-white rounded-2xl p-8 border border-gray-200 text-center">
-                    <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h4 className="text-lg font-semibold text-gray-900 mb-2">No activities planned yet</h4>
-                    <p className="text-gray-600 mb-4">Start building your itinerary by adding flights, hotels, activities, and more.</p>
+                  <div className="bg-blue-50 rounded-2xl p-8 border border-blue-100 text-center">
+                    <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <Clock className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <h4 className="text-xl font-semibold text-gray-900 mb-2">Your timeline awaits</h4>
+                    <p className="text-gray-600 mb-6 max-w-md mx-auto">Create a detailed schedule for your trip with flights, activities, and transportation.</p>
                     <button 
                       onClick={handleAddItineraryItem}
                       className="btn-primary"
@@ -876,10 +992,12 @@ export default function TripDetailPage() {
                 </div>
 
                 {accommodations.length === 0 ? (
-                  <div className="bg-white rounded-2xl p-8 border border-gray-200 text-center">
-                    <Hotel className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h4 className="text-lg font-semibold text-gray-900 mb-2">No accommodations booked yet</h4>
-                    <p className="text-gray-600 mb-4">Add your hotel reservations, Airbnb bookings, and other accommodation details.</p>
+                  <div className="bg-green-50 rounded-2xl p-8 border border-green-100 text-center">
+                    <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <Hotel className="w-8 h-8 text-green-600" />
+                    </div>
+                    <h4 className="text-xl font-semibold text-gray-900 mb-2">Find your perfect stay</h4>
+                    <p className="text-gray-600 mb-6 max-w-md mx-auto">Add hotel reservations, Airbnb bookings, and other accommodations.</p>
                     <button 
                       onClick={handleAddAccommodation}
                       className="btn-primary"

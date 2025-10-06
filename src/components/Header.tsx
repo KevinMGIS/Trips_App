@@ -56,7 +56,7 @@ export default function Header({ showCreateButton = true }: HeaderProps) {
                 to="/trips" 
                 className="text-gray-600 hover:text-orange-500 font-medium transition-colors"
               >
-                My Trips
+                Look Back
               </Link>
             </nav>
           </div>
