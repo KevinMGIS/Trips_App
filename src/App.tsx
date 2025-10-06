@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import LoginPage from './components/LoginPage'
+import AnimatedLogo from './components/AnimatedLogo'
 import './index.css'
 
 // Protected Route Component
@@ -36,35 +38,108 @@ function Dashboard() {
   const { signOut, user } = useAuth()
 
   return (
-    <div className="min-h-screen bg-background">
+    <motion.div 
+      className="min-h-screen bg-background"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
+    >
       <div className="container-mobile py-8">
-        <div className="card p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+        <motion.div 
+          className="card p-6"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
+          {/* Animated logo header */}
+          <motion.div 
+            className="flex items-center justify-center mb-6"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <AnimatedLogo size={100} />
+          </motion.div>
+          
+          <motion.h1 
+            className="text-2xl font-bold text-gray-900 mb-4 text-center"
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+          >
             Welcome to Trips! 🎉
-          </h1>
-          <p className="text-base text-gray-600 mb-6">
+          </motion.h1>
+          
+          <motion.p 
+            className="text-base text-gray-600 mb-6 text-center"
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.7 }}
+          >
             Hello {user?.email}! Your beautiful trip planning app is ready.
-          </p>
-          <div className="space-y-4">
-            <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
+          </motion.p>
+          
+          <motion.div 
+            className="space-y-4"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.8 }}
+          >
+            <motion.div 
+              className="p-4 bg-orange-50 rounded-xl border border-orange-100"
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+            >
               <h3 className="font-semibold text-orange-700 mb-2">What's Next?</h3>
-              <ul className="text-sm text-orange-600 space-y-1">
-                <li>• Set up your Supabase database</li>
-                <li>• Create your first trip</li>
-                <li>• Invite your partner</li>
-                <li>• Start planning adventures!</li>
-              </ul>
-            </div>
-            <button
+              <motion.ul 
+                className="text-sm text-orange-600 space-y-1"
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: {
+                    opacity: 1,
+                    transition: {
+                      staggerChildren: 0.1,
+                      delayChildren: 1
+                    }
+                  }
+                }}
+              >
+                {[
+                  '• Set up your Supabase database',
+                  '• Create your first trip', 
+                  '• Invite your partner',
+                  '• Start planning adventures!'
+                ].map((item, index) => (
+                  <motion.li
+                    key={index}
+                    variants={{
+                      hidden: { opacity: 0, x: -10 },
+                      visible: { opacity: 1, x: 0 }
+                    }}
+                  >
+                    {item}
+                  </motion.li>
+                ))}
+              </motion.ul>
+            </motion.div>
+            
+            <motion.button
               onClick={() => signOut()}
-              className="btn-secondary"
+              className="btn-secondary w-full sm:w-auto"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 1.2 }}
             >
               Sign out
-            </button>
-          </div>
-        </div>
+            </motion.button>
+          </motion.div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
