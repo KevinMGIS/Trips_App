@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import LoginPage from './components/LoginPage'
 import CreateTripPage from './components/CreateTripPage'
 import TripDetailPage from './components/TripDetailPage'
+import LookBackPage from './components/LookBackPage'
 import Header from './components/Header'
 import AnimatedLogo from './components/AnimatedLogo'
 import './index.css'
@@ -305,7 +306,7 @@ function Dashboard() {
               </p>
               
               {/* Debug info for development */}
-              {process.env.NODE_ENV === 'development' && (
+              {import.meta.env.DEV && (
                 <div className="text-xs text-gray-400 mb-4 font-mono p-2 bg-gray-50 rounded">
                   Debug Info:<br />
                   User ID: {user?.id || 'No ID'}<br />
@@ -481,6 +482,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/look-back"
+            element={
+              <ProtectedRoute>
+                <LookBackPage />
               </ProtectedRoute>
             }
           />

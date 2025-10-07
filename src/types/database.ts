@@ -120,7 +120,44 @@ export interface ItineraryItemWithBooking extends ItineraryItem {
   booking?: Booking
 }
 
-// Form types for creating/updating entities
+export interface TripPhoto {
+  id: string
+  trip_id: string
+  user_id: string
+  title?: string
+  description?: string
+  photo_url: string
+  thumbnail_url?: string
+  latitude?: number
+  longitude?: number
+  location_name?: string
+  taken_at?: string
+  uploaded_at: string
+  file_size?: number
+  file_type?: string
+  camera_make?: string
+  camera_model?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface NewTripPhoto {
+  trip_id: string
+  user_id: string
+  title?: string
+  description?: string
+  photo_url: string
+  thumbnail_url?: string
+  latitude?: number
+  longitude?: number
+  location_name?: string
+  taken_at?: string
+  file_size?: number
+  file_type?: string
+  camera_make?: string
+  camera_model?: string
+}
+
 export interface CreateTripData {
   title: string
   description?: string

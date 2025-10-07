@@ -53,7 +53,7 @@ export default function Header({ showCreateButton = true }: HeaderProps) {
                 Dashboard
               </Link>
               <Link 
-                to="/trips" 
+                to="/look-back" 
                 className="text-gray-600 hover:text-orange-500 font-medium transition-colors"
               >
                 Look Back
