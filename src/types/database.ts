@@ -73,6 +73,35 @@ export interface ItineraryItem {
   updated_at: string
 }
 
+export interface TripIdea {
+  id: string
+  trip_id: string
+  title: string
+  description?: string
+  category?: 'flight' | 'accommodation' | 'activity' | 'restaurant' | 'transport' | 'other'
+  location?: string
+  notes?: string
+  url?: string
+  estimated_duration?: string
+  priority: 'high' | 'medium' | 'low'
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface NewTripIdea {
+  trip_id: string
+  title: string
+  description?: string
+  category?: 'flight' | 'accommodation' | 'activity' | 'restaurant' | 'transport' | 'other'
+  location?: string
+  notes?: string
+  url?: string
+  estimated_duration?: string
+  priority?: 'high' | 'medium' | 'low'
+  created_by?: string
+}
+
 export interface Booking {
   id: string
   trip_id: string

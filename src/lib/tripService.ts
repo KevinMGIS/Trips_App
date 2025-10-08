@@ -229,6 +229,99 @@ export class TripService {
       return { error }
     }
   }
+
+  // TRIP IDEAS METHODS
+
+  // Get trip ideas for a trip
+  static async getTripIdeas(tripId: string): Promise<{ data: any[] | null; error: any }> {
+    try {
+      const { data, error } = await supabase
+        .from('trip_ideas')
+        .select('*')
+        .eq('trip_id', tripId)
+        .order('created_at', { ascending: false })
+
+      return { data, error }
+    } catch (error) {
+      console.error('Error in getTripIdeas:', error)
+      return { data: null, error }
+    }
+  }
+
+  // Create a new trip idea
+  static async createTripIdea(ideaData: any): Promise<{ data: any | null; error: any }> {
+    try {
+      const { data, error } = await supabase
+        .from('trip_ideas')
+        .insert([ideaData])
+        .select('*')
+        .single()
+
+      return { data, error }
+    } catch (error) {
+      console.error('Error in createTripIdea:', error)
+      return { data: null, error }
+    }
+  }
+
+  // Update a trip idea
+  static async updateTripIdea(ideaId: string, updates: any): Promise<{ data: any | null; error: any }> {
+    try {
+      const { data, error } = await supabase
+        .from('trip_ideas')
+        .update(updates)
+        .eq('id', ideaId)
+        .select('*')
+        .single()
+
+      return { data, error }
+    } catch (error) {
+      console.error('Error in updateTripIdea:', error)
+      return { data: null, error }
+    }
+  }
+
+  // Delete a trip idea
+  static async deleteTripIdea(ideaId: string): Promise<{ error: any }> {
+    try {
+      const { error } = await supabase
+        .from('trip_ideas')
+        .delete()
+        .eq('id', ideaId)
+
+      return { error }
+    } catch (error) {
+      console.error('Error in deleteTripIdea:', error)
+      return { error }
+    }
+  }
+
+  // Convert a trip idea to an itinerary item
+  static async convertIdeaToItinerary(
+    ideaId: string, 
+    itineraryData: any
+  ): Promise<{ data: any | null; error: any }> {
+    try {
+      // Create the itinerary item
+      const { data: itineraryItem, error: createError } = await this.createItineraryItem(itineraryData)
+      
+      if (createError) {
+        return { data: null, error: createError }
+      }
+
+      // Delete the idea after successful conversion
+      const { error: deleteError } = await this.deleteTripIdea(ideaId)
+      
+      if (deleteError) {
+        console.warn('Created itinerary item but failed to delete idea:', deleteError)
+      }
+
+      return { data: itineraryItem, error: null }
+    } catch (error) {
+      console.error('Error in convertIdeaToItinerary:', error)
+      return { data: null, error }
+    }
+  }
 }
 
 // Trip status helpers

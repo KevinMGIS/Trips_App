@@ -8,10 +8,11 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { TripService } from '../lib/tripService'
-import type { Trip, ItineraryItem } from '../types/database'
+import type { Trip, ItineraryItem, TripIdea } from '../types/database'
 import Header from './Header'
 import TimelineGanttView from './TimelineGanttView'
 import DayCardView from './DayCardView'
+import TripIdeasPanel from './TripIdeasPanel'
 import {
   DndContext,
   closestCenter,
@@ -457,6 +458,7 @@ export default function TripDetailPage() {
   const { user } = useAuth()
   const [trip, setTrip] = useState<Trip | null>(null)
   const [itineraryItems, setItineraryItems] = useState<ItineraryItem[]>([])
+  const [tripIdeas, setTripIdeas] = useState<TripIdea[]>([])
   const [stats, setStats] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
@@ -506,11 +508,57 @@ export default function TripDetailPage() {
     })
   )
 
-  // Handle drag end for reordering itinerary items - now supports cross-day dragging
-  const handleDragEnd = (event: DragEndEvent) => {
+  // Handle drag end for reordering itinerary items - now supports cross-day dragging and ideas
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
 
-    if (!over || active.id === over.id) {
+    if (!over) {
+      return
+    }
+
+    // Check if dragging an idea
+    const isIdea = active.data.current?.type === 'idea'
+    
+    if (isIdea) {
+      // Handle idea being dropped onto itinerary
+      const idea = active.data.current?.idea as TripIdea
+      if (!idea || !trip) return
+
+      // Find the item we're dropping near to determine the date
+      const overItem = itineraryItems.find(item => item.id === over.id)
+      if (!overItem) return
+
+      // Extract date from the item we're dropping near
+      const targetDate = overItem.start_datetime.split('T')[0]
+      
+      // Create itinerary item from idea
+      const newItem = {
+        trip_id: trip.id,
+        title: idea.title,
+        description: idea.description || '',
+        category: idea.category || 'activity',
+        start_datetime: `${targetDate}T12:00:00`, // Default to midday
+        end_datetime: null,
+        location: idea.location || '',
+        notes: idea.notes || '',
+        confirmation_number: '',
+        created_by: user?.id
+      }
+
+      try {
+        // Convert idea to itinerary item (creates item and deletes idea)
+        await TripService.convertIdeaToItinerary(idea.id, newItem)
+        // Reload data to reflect changes
+        await loadTripData()
+      } catch (error) {
+        console.error('Error converting idea to itinerary:', error)
+      }
+      
+      return
+    }
+
+    // Original logic for reordering existing items
+    if (active.id === over.id) {
       return
     }
 
@@ -611,6 +659,14 @@ export default function TripDetailPage() {
           // Filter accommodations
           const accommodationItems = (itineraryData || []).filter(item => item.category === 'accommodation')
           setAccommodations(accommodationItems)
+        }
+
+        // Load trip ideas
+        const { data: ideasData, error: ideasError } = await TripService.getTripIdeas(tripData.id)
+        if (ideasError) {
+          console.error('Error loading trip ideas:', ideasError)
+        } else {
+          setTripIdeas(ideasData || [])
         }
       }
       
@@ -1243,6 +1299,15 @@ export default function TripDetailPage() {
 
             {activeTab === 'itinerary' && (
               <div className="space-y-6">
+                {/* Trip Ideas Panel */}
+                {trip && (
+                  <TripIdeasPanel
+                    tripId={trip.id}
+                    ideas={tripIdeas}
+                    onIdeasChange={loadTripData}
+                  />
+                )}
+
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-semibold text-gray-900">Trip Timeline</h3>
                   <div className="flex items-center gap-3">
