@@ -38,7 +38,7 @@ export default function Header({ showCreateButton = true }: HeaderProps) {
               to="/" 
               className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             >
-              <AnimatedLogo size={32} showText={false} />
+              <AnimatedLogo size={80} showText={false} />
               <span className="text-xl font-bold text-gray-900 hidden sm:block">
                 Trips
               </span>
