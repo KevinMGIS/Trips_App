@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { 
-  ArrowLeft, Calendar, MapPin, DollarSign, Clock,
+  ArrowLeft, Calendar, MapPin, Clock,
   Plus, Edit, Trash2, Plane, Hotel, Car, Camera,
   CheckCircle, Circle, X, GripVertical
 } from 'lucide-react'
@@ -10,6 +10,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { TripService } from '../lib/tripService'
 import type { Trip, ItineraryItem } from '../types/database'
 import Header from './Header'
+import TimelineGanttView from './TimelineGanttView'
+import DayCardView from './DayCardView'
 import {
   DndContext,
   closestCenter,
@@ -37,7 +39,7 @@ const formatLocalTime = (dateTimeString: string) => {
   
   if (dateTimeString.includes('T')) {
     // ISO format: remove timezone indicator to treat as local
-    const localDateString = dateTimeString.replace(/[Z]$/, '').replace(/[+\-]\d{2}:\d{2}$/, '')
+    const localDateString = dateTimeString.replace(/[Z]$/, '').replace(/[+-]\d{2}:\d{2}$/, '')
     date = new Date(localDateString)
     
     // Check if this is a flexible time entry (12:00:00) indicating unknown/flexible timing
@@ -109,12 +111,6 @@ function TimelineItem({ item, onEdit, onDelete }: {
                 <span className="flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
                   {item.location}
-                </span>
-              )}
-              {item.cost && (
-                <span className="flex items-center gap-1">
-                  <DollarSign className="w-3 h-3" />
-                  ${item.cost}
                 </span>
               )}
             </div>
@@ -223,12 +219,6 @@ function SortableTimelineItem({ item, onEdit, onDelete }: {
                 <span className="flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
                   {item.location}
-                </span>
-              )}
-              {item.cost && (
-                <span className="flex items-center gap-1">
-                  <DollarSign className="w-3 h-3" />
-                  ${item.cost}
                 </span>
               )}
             </div>
@@ -355,15 +345,6 @@ function AccommodationCard({ accommodation, onEdit, onDelete }: {
             </p>
           </div>
         )}
-
-        {accommodation.cost && (
-          <div>
-            <p className="text-xs text-gray-500 mb-1">Cost</p>
-            <p className="text-sm font-medium text-gray-900">
-              ${accommodation.cost}
-            </p>
-          </div>
-        )}
       </div>
 
       {(accommodation.confirmation_number || accommodation.booking_url || accommodation.notes) && (
@@ -411,7 +392,6 @@ function QuickStats({ trip, stats }: { trip: Trip, stats: any }) {
     return Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
   })()
 
-  const totalCost = stats.totalCost || 0
   const itineraryCount = stats.itineraryItems || 0
   const accommodationCount = stats.accommodations || 0
 
@@ -439,19 +419,11 @@ function QuickStats({ trip, stats }: { trip: Trip, stats: any }) {
       bgColor: 'bg-green-50',
       iconColor: 'text-green-600',
       borderColor: 'border-green-100'
-    },
-    ...(totalCost > 0 ? [{
-      icon: DollarSign,
-      label: 'Total Cost',
-      value: `$${totalCost.toLocaleString()}`,
-      bgColor: 'bg-amber-50',
-      iconColor: 'text-amber-600',
-      borderColor: 'border-amber-100'
-    }] : [])
+    }
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {statsData.map((stat, index) => (
         <motion.div
           key={stat.label}
@@ -488,6 +460,7 @@ export default function TripDetailPage() {
   const [stats, setStats] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
+  const [itineraryView, setItineraryView] = useState<'timeline' | 'daycard' | 'gantt'>('daycard')
   const [showEditModal, setShowEditModal] = useState(false)
   const [showItineraryModal, setShowItineraryModal] = useState(false)
   const [showAccommodationModal, setShowAccommodationModal] = useState(false)
@@ -533,7 +506,7 @@ export default function TripDetailPage() {
     })
   )
 
-  // Handle drag end for reordering itinerary items
+  // Handle drag end for reordering itinerary items - now supports cross-day dragging
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
 
@@ -545,49 +518,40 @@ export default function TripDetailPage() {
       const oldIndex = items.findIndex((item) => item.id === active.id)
       const newIndex = items.findIndex((item) => item.id === over.id)
       
+      if (oldIndex === -1 || newIndex === -1) {
+        return items
+      }
+      
       const reorderedItems = arrayMove(items, oldIndex, newIndex)
       
-      // Apply smart time updates to reordered items
-      const itemsWithUpdatedTimes = applySmartTimeUpdates(reorderedItems)
+      // Get the dragged item and the item it was dropped near
+      const draggedItem = reorderedItems[newIndex]
+      const referenceItem = over.id === draggedItem.id ? 
+        (newIndex > 0 ? reorderedItems[newIndex - 1] : null) : 
+        reorderedItems.find(item => item.id === over.id)
       
-      // Save the new order and times to database
-      saveItemOrder(itemsWithUpdatedTimes)
+      // If moving to a different day, update the date
+      if (referenceItem) {
+        const referenceDate = referenceItem.start_datetime.split('T')[0]
+        const draggedDate = draggedItem.start_datetime.split('T')[0]
+        
+        if (referenceDate !== draggedDate) {
+          // Update to the same date as reference item, keeping the original time
+          const draggedTime = draggedItem.start_datetime.split('T')[1] || '12:00:00'
+          draggedItem.start_datetime = `${referenceDate}T${draggedTime}`
+          
+          // Update end_datetime if it exists
+          if (draggedItem.end_datetime) {
+            const endTime = draggedItem.end_datetime.split('T')[1] || '12:00:00'
+            draggedItem.end_datetime = `${referenceDate}T${endTime}`
+          }
+        }
+      }
       
-      return itemsWithUpdatedTimes
-    })
-  }
-
-  // Apply smart time updates based on item positions
-  const applySmartTimeUpdates = (items: ItineraryItem[]): ItineraryItem[] => {
-    return items.map((item, index) => {
-      // Skip time updates for items that already have specific times (not 12:00:00 flexible)
-      const currentTime = item.start_datetime.split('T')[1]
-      if (currentTime && !currentTime.startsWith('12:00')) {
-        return item // Keep original time if it's a specific time
-      }
-
-      // Calculate suggested time based on position
-      let suggestedTime = '12:00:00' // Default for flexible times
+      // Save the new order and dates to database
+      saveItemOrder(reorderedItems)
       
-      if (index === 0) {
-        // First item: suggest morning start
-        suggestedTime = '09:00:00'
-      } else if (index < items.length - 1) {
-        // Middle items: distribute throughout the day
-        const hourOffset = Math.min(index * 2, 8) // Max 8 hour spread
-        const baseHour = 9 + hourOffset
-        suggestedTime = `${baseHour.toString().padStart(2, '0')}:00:00`
-      } else {
-        // Last item: suggest afternoon/evening
-        suggestedTime = '17:00:00'
-      }
-
-      // Update the start_datetime with new time while keeping the date
-      const datePart = item.start_datetime.split('T')[0]
-      return {
-        ...item,
-        start_datetime: `${datePart}T${suggestedTime}`
-      }
+      return reorderedItems
     })
   }
 
@@ -610,13 +574,7 @@ export default function TripDetailPage() {
     }
   }
 
-  useEffect(() => {
-    if (id) {
-      loadTripData()
-    }
-  }, [id])
-
-  const loadTripData = async () => {
+  const loadTripData = useCallback(async () => {
     if (!id || !user?.id) return
     
     setLoading(true)
@@ -661,7 +619,11 @@ export default function TripDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id, user?.id])
+
+  useEffect(() => {
+    loadTripData()
+  }, [loadTripData])
 
   const handleEditItem = (item: ItineraryItem) => {
     setEditingItem(item)
@@ -745,7 +707,6 @@ export default function TripDetailPage() {
         start_datetime: startDateTime,
         end_datetime: endDateTime,
         location: itineraryForm.location || null,
-        cost: itineraryForm.cost ? parseFloat(itineraryForm.cost) : null,
         confirmation_number: itineraryForm.confirmation_number || null,
         notes: itineraryForm.notes || null,
         created_by: user.id
@@ -822,7 +783,6 @@ export default function TripDetailPage() {
         start_datetime: accommodationForm.start_datetime,
         end_datetime: accommodationForm.end_datetime || null,
         location: accommodationForm.location || null,
-        cost: accommodationForm.cost ? parseFloat(accommodationForm.cost) : null,
         confirmation_number: accommodationForm.confirmation_number || null,
         notes: accommodationForm.notes || null,
         booking_url: accommodationForm.booking_url || null,
@@ -1285,13 +1245,55 @@ export default function TripDetailPage() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-semibold text-gray-900">Trip Timeline</h3>
-                  <button 
-                    onClick={handleAddItineraryItem}
-                    className="btn-primary flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Activity
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {/* View Toggle Buttons */}
+                    <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                      <button
+                        onClick={() => setItineraryView('daycard')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                          itineraryView === 'daycard'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                        title="Day Card View"
+                      >
+                        <Calendar className="w-3.5 h-3.5" />
+                        Cards
+                      </button>
+                      <button
+                        onClick={() => setItineraryView('gantt')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                          itineraryView === 'gantt'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                        title="Gantt Chart View"
+                      >
+                        <Calendar className="w-3.5 h-3.5" />
+                        Timeline
+                      </button>
+                      <button
+                        onClick={() => setItineraryView('timeline')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                          itineraryView === 'timeline'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                        title="List View"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                        List
+                      </button>
+                    </div>
+                    
+                    <button 
+                      onClick={handleAddItineraryItem}
+                      className="btn-primary flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Activity
+                    </button>
+                  </div>
                 </div>
 
                 {itineraryItems.length === 0 ? (
@@ -1309,18 +1311,53 @@ export default function TripDetailPage() {
                     </button>
                   </div>
                 ) : (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext
-                      items={itineraryItems.map(item => item.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {renderItineraryByDays()}
-                    </SortableContext>
-                  </DndContext>
+                  <>
+                    {/* Gantt Chart View */}
+                    {itineraryView === 'gantt' && trip && (
+                      <TimelineGanttView
+                        trip={trip}
+                        itineraryItems={itineraryItems}
+                        onItemClick={handleEditItem}
+                      />
+                    )}
+
+                    {/* Day Card View with Drag & Drop */}
+                    {itineraryView === 'daycard' && trip && (
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={itineraryItems.map(item => item.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <DayCardView
+                            trip={trip}
+                            itineraryItems={itineraryItems}
+                            onEdit={handleEditItem}
+                            onDelete={handleDeleteItem}
+                          />
+                        </SortableContext>
+                      </DndContext>
+                    )}
+
+                    {/* Original Timeline View with Drag & Drop */}
+                    {itineraryView === 'timeline' && (
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={itineraryItems.map(item => item.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {renderItineraryByDays()}
+                        </SortableContext>
+                      </DndContext>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -1594,32 +1631,17 @@ export default function TripDetailPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Location
-                    </label>
-                    <input
-                      type="text"
-                      value={itineraryForm.location}
-                      onChange={(e) => setItineraryForm(prev => ({ ...prev, location: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="Airport, hotel address, venue, etc."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Cost
-                    </label>
-                    <input
-                      type="number"
-                      value={itineraryForm.cost}
-                      onChange={(e) => setItineraryForm(prev => ({ ...prev, cost: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="0.00"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={itineraryForm.location}
+                    onChange={(e) => setItineraryForm(prev => ({ ...prev, location: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Airport, hotel address, venue, etc."
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1755,32 +1777,17 @@ export default function TripDetailPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Total Cost
-                    </label>
-                    <input
-                      type="number"
-                      value={accommodationForm.cost}
-                      onChange={(e) => setAccommodationForm(prev => ({ ...prev, cost: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Confirmation Number
-                    </label>
-                    <input
-                      type="text"
-                      value={accommodationForm.confirmation_number}
-                      onChange={(e) => setAccommodationForm(prev => ({ ...prev, confirmation_number: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="Booking confirmation"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Confirmation Number
+                  </label>
+                  <input
+                    type="text"
+                    value={accommodationForm.confirmation_number}
+                    onChange={(e) => setAccommodationForm(prev => ({ ...prev, confirmation_number: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Booking confirmation"
+                  />
                 </div>
 
                 <div>
