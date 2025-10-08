@@ -87,16 +87,16 @@ function DraggableIdea({ idea, onEdit, onDelete }: {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: isDragging ? 0.5 : 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className={`bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow ${
+      className={`bg-white rounded-lg border border-gray-200 p-2.5 md:p-3 shadow-sm hover:shadow-md transition-shadow ${
         isDragging ? 'cursor-grabbing' : 'cursor-grab'
       }`}
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-1.5 md:gap-2">
         {/* Drag Handle */}
         <button
           {...listeners}
           {...attributes}
-          className="mt-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing"
+          className="mt-0.5 md:mt-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing touch-manipulation min-w-[20px]"
           aria-label="Drag to add to itinerary"
         >
           <GripVertical className="w-4 h-4" />
@@ -104,19 +104,19 @@ function DraggableIdea({ idea, onEdit, onDelete }: {
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <h4 className="font-medium text-gray-900 text-sm truncate">{idea.title}</h4>
-            <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-start justify-between gap-1.5 md:gap-2 mb-1">
+            <h4 className="font-medium text-gray-900 text-xs md:text-sm truncate">{idea.title}</h4>
+            <div className="flex items-center gap-0.5 md:gap-1 flex-shrink-0">
               <button
                 onClick={onEdit}
-                className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                className="p-1 md:p-1 text-gray-400 hover:text-blue-600 transition-colors touch-manipulation"
                 aria-label="Edit idea"
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={onDelete}
-                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                className="p-1 md:p-1 text-gray-400 hover:text-red-600 transition-colors touch-manipulation"
                 aria-label="Delete idea"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -125,7 +125,7 @@ function DraggableIdea({ idea, onEdit, onDelete }: {
           </div>
 
           {idea.description && (
-            <p className="text-xs text-gray-600 mb-2 line-clamp-2">{idea.description}</p>
+            <p className="text-xs text-gray-600 mb-1.5 md:mb-2 line-clamp-2">{idea.description}</p>
           )}
 
           {idea.url && (
@@ -133,25 +133,25 @@ function DraggableIdea({ idea, onEdit, onDelete }: {
               href={idea.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 mb-2 w-fit"
+              className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 mb-1.5 md:mb-2 w-fit touch-manipulation"
               onClick={(e) => e.stopPropagation()}
             >
-              <ExternalLink className="w-3 h-3" />
-              <span className="truncate max-w-[200px]">{idea.url}</span>
+              <ExternalLink className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate max-w-[150px] sm:max-w-[200px]">{idea.url}</span>
             </a>
           )}
 
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1 md:gap-1.5">
             {idea.category && (
-              <span className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(idea.category)}`}>
+              <span className={`text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full ${getCategoryColor(idea.category)}`}>
                 {idea.category}
               </span>
             )}
-            <span className={`text-xs px-2 py-0.5 rounded-full ${getPriorityColor(idea.priority)}`}>
+            <span className={`text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full ${getPriorityColor(idea.priority)}`}>
               {idea.priority}
             </span>
             {idea.location && (
-              <span className="text-xs text-gray-500">{idea.location}</span>
+              <span className="text-[10px] md:text-xs text-gray-500 truncate max-w-[100px] sm:max-w-none">{idea.location}</span>
             )}
             {idea.estimated_duration && (
               <span className="text-xs text-gray-500">~{idea.estimated_duration}</span>
@@ -250,26 +250,26 @@ export default function TripIdeasPanel({ tripId, ideas, onIdeasChange }: TripIde
   return (
     <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-4">
+      <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-3 md:p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-white">
-            <Lightbulb className="w-5 h-5" />
-            <h3 className="font-semibold">Trip Ideas</h3>
-            <span className="text-sm bg-white/20 px-2 py-0.5 rounded-full">
+          <div className="flex items-center gap-1.5 md:gap-2 text-white">
+            <Lightbulb className="w-4 h-4 md:w-5 md:h-5" />
+            <h3 className="font-semibold text-sm md:text-base">Trip Ideas</h3>
+            <span className="text-xs md:text-sm bg-white/20 px-1.5 md:px-2 py-0.5 rounded-full">
               {ideas.length}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 md:gap-2">
             <button
               onClick={() => setShowForm(!showForm)}
-              className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+              className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors touch-manipulation"
               aria-label="Add new idea"
             >
               <Plus className="w-4 h-4 text-white" />
             </button>
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+              className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors touch-manipulation"
               aria-label={isExpanded ? 'Collapse' : 'Expand'}
             >
               {isExpanded ? (
@@ -291,12 +291,12 @@ export default function TripIdeasPanel({ tripId, ideas, onIdeasChange }: TripIde
             exit={{ height: 0 }}
             className="overflow-hidden"
           >
-            <div className="p-4 space-y-4">
+            <div className="p-3 md:p-4 space-y-3 md:space-y-4">
               {/* Error Message */}
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-2.5 md:p-3 flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-800">{error}</p>
+                  <p className="text-xs md:text-sm text-red-800">{error}</p>
                 </div>
               )}
 
@@ -306,7 +306,7 @@ export default function TripIdeasPanel({ tripId, ideas, onIdeasChange }: TripIde
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   onSubmit={handleSubmit}
-                  className="bg-white rounded-lg border border-gray-200 p-4 space-y-3"
+                  className="bg-white rounded-lg border border-gray-200 p-3 md:p-4 space-y-2.5 md:space-y-3"
                 >
                   <h4 className="font-medium text-gray-900 text-sm">
                     {editingIdea ? 'Edit Idea' : 'New Idea'}
@@ -333,7 +333,7 @@ export default function TripIdeasPanel({ tripId, ideas, onIdeasChange }: TripIde
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
@@ -358,7 +358,7 @@ export default function TripIdeasPanel({ tripId, ideas, onIdeasChange }: TripIde
                     </select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input
                       type="text"
                       value={formData.location}
@@ -385,18 +385,18 @@ export default function TripIdeasPanel({ tripId, ideas, onIdeasChange }: TripIde
                     />
                   </div>
 
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex flex-col sm:flex-row gap-2 pt-2">
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="flex-1 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                      className="flex-1 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 sm:py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 touch-manipulation"
                     >
                       {isSubmitting ? 'Saving...' : editingIdea ? 'Update' : 'Add Idea'}
                     </button>
                     <button
                       type="button"
                       onClick={handleCancel}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="px-4 py-2.5 sm:py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors touch-manipulation"
                     >
                       Cancel
                     </button>
@@ -407,8 +407,11 @@ export default function TripIdeasPanel({ tripId, ideas, onIdeasChange }: TripIde
               {/* Ideas List */}
               {sortedIdeas.length > 0 ? (
                 <div className="space-y-2">
-                  <p className="text-xs text-gray-500 px-1">
+                  <p className="text-xs text-gray-500 px-1 hidden sm:block">
                     Drag ideas onto the itinerary to schedule them
+                  </p>
+                  <p className="text-xs text-gray-500 px-1 sm:hidden">
+                    Tap to edit • Drag to schedule
                   </p>
                   <AnimatePresence>
                     {sortedIdeas.map((idea) => (
@@ -422,9 +425,9 @@ export default function TripIdeasPanel({ tripId, ideas, onIdeasChange }: TripIde
                   </AnimatePresence>
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Lightbulb className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm mb-1">No ideas yet</p>
+                <div className="text-center py-6 md:py-8 text-gray-500 px-4">
+                  <Lightbulb className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-2 md:mb-3 opacity-30" />
+                  <p className="text-xs md:text-sm mb-1">No ideas yet</p>
                   <p className="text-xs">Add ideas that you might want to add to your trip</p>
                 </div>
               )}

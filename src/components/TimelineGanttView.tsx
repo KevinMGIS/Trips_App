@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Plane, Hotel, Car, Camera, Circle, MapPin, Clock } from 'lucide-react'
+import { Plane, Hotel, Car, Camera, Circle, MapPin, Clock, Monitor } from 'lucide-react'
 import type { ItineraryItem, Trip } from '../types/database'
 
 interface TimelineGanttViewProps {
@@ -20,6 +20,20 @@ export default function TimelineGanttView({ trip, itineraryItems, onItemClick }:
     date.setDate(tripStartDate.getDate() + i)
     return date
   })
+
+  // Mobile warning component
+  const MobileWarning = () => (
+    <div className="md:hidden bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+      <Monitor className="w-12 h-12 mx-auto mb-3 text-blue-600" />
+      <h4 className="font-semibold text-gray-900 mb-1">Desktop View Recommended</h4>
+      <p className="text-sm text-gray-600 mb-3">
+        The Timeline/Gantt view is optimized for larger screens. For the best experience on mobile, try the Cards or List view.
+      </p>
+      <p className="text-xs text-gray-500">
+        Switch views using the buttons above.
+      </p>
+    </div>
+  )
 
   const getIcon = (category: string) => {
     switch (category) {
@@ -84,14 +98,19 @@ export default function TimelineGanttView({ trip, itineraryItems, onItemClick }:
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 overflow-x-auto">
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Timeline View</h3>
-        <p className="text-sm text-gray-600">Visual overview of your trip activities across all days</p>
-      </div>
+    <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-6 overflow-x-auto">
+      {/* Mobile Warning */}
+      <MobileWarning />
 
-      {/* Category Legend */}
-      <div className="flex flex-wrap gap-4 mb-6 pb-4 border-b border-gray-200">
+      {/* Desktop View */}
+      <div className="hidden md:block">
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Timeline View</h3>
+          <p className="text-sm text-gray-600">Visual overview of your trip activities across all days</p>
+        </div>
+
+        {/* Category Legend */}
+        <div className="flex flex-wrap gap-4 mb-6 pb-4 border-b border-gray-200">
         {categories.map(category => {
           const count = itemsByCategory[category]?.length || 0
           if (count === 0) return null
@@ -213,6 +232,7 @@ export default function TimelineGanttView({ trip, itineraryItems, onItemClick }:
           </div>
         )}
       </div>
+    </div>
     </div>
   )
 }

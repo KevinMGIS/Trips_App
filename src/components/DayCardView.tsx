@@ -92,12 +92,12 @@ function SortableItem({
           : 'border-gray-200 hover:border-orange-200 hover:shadow-md'
       }`}
     >
-      <div className="flex items-start p-3">
+      <div className="flex items-start p-2 md:p-3">
         {/* Drag Handle */}
         <div
           {...attributes}
           {...listeners}
-          className={`flex items-center justify-center p-1 mr-2 rounded cursor-grab active:cursor-grabbing transition-all ${
+          className={`flex items-center justify-center p-0.5 md:p-1 mr-1.5 md:mr-2 rounded cursor-grab active:cursor-grabbing transition-all touch-manipulation ${
             isDragging 
               ? 'text-orange-500 bg-orange-50' 
               : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50 opacity-0 group-hover:opacity-100'
@@ -108,24 +108,24 @@ function SortableItem({
         </div>
 
         {/* Item Icon */}
-        <div className={`p-2 rounded-lg border ${getCategoryColor(item.category)} flex-shrink-0`}>
+        <div className={`p-1.5 md:p-2 rounded-lg border ${getCategoryColor(item.category)} flex-shrink-0`}>
           {getIcon(item.category)}
         </div>
 
         {/* Item Content */}
-        <div className="flex-1 ml-3 min-w-0">
-          <h4 className="font-semibold text-gray-900 text-sm mb-1 truncate">{item.title}</h4>
+        <div className="flex-1 ml-2 md:ml-3 min-w-0">
+          <h4 className="font-semibold text-gray-900 text-xs md:text-sm mb-0.5 md:mb-1 truncate">{item.title}</h4>
           {item.description && (
-            <p className="text-xs text-gray-600 mb-2 line-clamp-2">{item.description}</p>
+            <p className="text-[10px] md:text-xs text-gray-600 mb-1 md:mb-2 line-clamp-2">{item.description}</p>
           )}
-          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 text-[10px] md:text-xs text-gray-500">
+            <span className="flex items-center gap-0.5 md:gap-1">
+              <Clock className="w-2.5 h-2.5 md:w-3 md:h-3" />
               {formatLocalTime(item.start_datetime)}
             </span>
             {item.location && (
-              <span className="flex items-center gap-1 truncate max-w-[200px]">
-                <MapPin className="w-3 h-3 flex-shrink-0" />
+              <span className="flex items-center gap-0.5 md:gap-1 truncate max-w-[120px] md:max-w-[200px]">
+                <MapPin className="w-2.5 h-2.5 md:w-3 md:h-3 flex-shrink-0" />
                 <span className="truncate">{item.location}</span>
               </span>
             )}
@@ -133,16 +133,16 @@ function SortableItem({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-1 ml-2">
+        <div className="flex items-center gap-0.5 md:gap-1 ml-1 md:ml-2">
           <button
             onClick={() => onEdit(item)}
-            className="p-1.5 text-gray-400 hover:text-orange-500 rounded transition-colors"
+            className="p-1 md:p-1.5 text-gray-400 hover:text-orange-500 rounded transition-colors touch-manipulation"
           >
             <Edit className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => onDelete(item.id)}
-            className="p-1.5 text-gray-400 hover:text-red-500 rounded transition-colors"
+            className="p-1 md:p-1.5 text-gray-400 hover:text-red-500 rounded transition-colors touch-manipulation"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -203,23 +203,23 @@ export default function DayCardView({ trip, itineraryItems, onEdit, onDelete }: 
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4">
       {/* Controls */}
-      <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 p-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white rounded-lg border border-gray-200 p-3 gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">Day by Day View</h3>
-          <p className="text-xs text-gray-600">Expand or collapse days to focus on what you need</p>
+          <h3 className="text-xs md:text-sm font-semibold text-gray-900">Day by Day View</h3>
+          <p className="text-[10px] md:text-xs text-gray-600">Expand or collapse days to focus on what you need</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2">
           <button
             onClick={expandAll}
-            className="text-xs px-3 py-1.5 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+            className="text-[10px] md:text-xs px-2 md:px-3 py-1.5 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors touch-manipulation"
           >
             Expand All
           </button>
           <button
             onClick={collapseAll}
-            className="text-xs px-3 py-1.5 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+            className="text-[10px] md:text-xs px-2 md:px-3 py-1.5 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors touch-manipulation"
           >
             Collapse All
           </button>
@@ -227,7 +227,7 @@ export default function DayCardView({ trip, itineraryItems, onEdit, onDelete }: 
       </div>
 
       {/* Day Cards */}
-      <div className="space-y-3">
+      <div className="space-y-2.5 md:space-y-3">
         {dates.map((date, index) => {
           const dateKey = date.toISOString().split('T')[0]
           const itemsForDate = (itemsByDate[dateKey] || []).sort(
@@ -254,25 +254,25 @@ export default function DayCardView({ trip, itineraryItems, onEdit, onDelete }: 
               {/* Day Header - Clickable */}
               <button
                 onClick={() => toggleDay(dateKey)}
-                className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                className="w-full p-3 md:p-4 flex items-center justify-between hover:bg-gray-50 transition-colors touch-manipulation"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 md:gap-4">
                   {/* Day Number Badge */}
-                  <div className="bg-orange-100 text-orange-700 rounded-full w-10 h-10 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                  <div className="bg-orange-100 text-orange-700 rounded-full w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-xs md:text-sm font-bold flex-shrink-0">
                     {dayNumber}
                   </div>
 
                   {/* Day Info */}
                   <div className="text-left">
-                    <h3 className="text-base font-semibold text-gray-900">
+                    <h3 className="text-sm md:text-base font-semibold text-gray-900">
                       Day {dayNumber}
                     </h3>
-                    <p className="text-sm text-gray-600">{displayDate}</p>
+                    <p className="text-xs md:text-sm text-gray-600 truncate max-w-[150px] sm:max-w-none">{displayDate}</p>
                   </div>
 
                   {/* Quick Stats */}
                   {itemsForDate.length > 0 && (
-                    <div className="hidden md:flex items-center gap-4 ml-4">
+                    <div className="hidden lg:flex items-center gap-4 ml-4">
                       <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-lg">
                         <span className="text-xs text-gray-500">Activities:</span>
                         <span className="text-sm font-semibold text-gray-900">{stats.count}</span>
@@ -281,15 +281,16 @@ export default function DayCardView({ trip, itineraryItems, onEdit, onDelete }: 
                   )}
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 md:gap-3">
                   {/* Activity Count Badge */}
                   {itemsForDate.length > 0 ? (
-                    <span className="px-2.5 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
-                      {itemsForDate.length} {itemsForDate.length === 1 ? 'item' : 'items'}
+                    <span className="px-1.5 md:px-2.5 py-0.5 md:py-1 bg-orange-100 text-orange-700 text-[10px] md:text-xs font-medium rounded-full">
+                      {itemsForDate.length} <span className="hidden sm:inline">{itemsForDate.length === 1 ? 'item' : 'items'}</span>
                     </span>
                   ) : (
-                    <span className="px-2.5 py-1 bg-gray-100 text-gray-500 text-xs font-medium rounded-full">
-                      No activities
+                    <span className="px-1.5 md:px-2.5 py-0.5 md:py-1 bg-gray-100 text-gray-500 text-[10px] md:text-xs font-medium rounded-full">
+                      <span className="hidden sm:inline">No activities</span>
+                      <span className="sm:hidden">0</span>
                     </span>
                   )}
 

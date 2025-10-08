@@ -424,7 +424,7 @@ function QuickStats({ trip, stats }: { trip: Trip, stats: any }) {
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
       {statsData.map((stat, index) => (
         <motion.div
           key={stat.label}
@@ -434,15 +434,15 @@ function QuickStats({ trip, stats }: { trip: Trip, stats: any }) {
           whileHover={{ y: -2 }}
           className="group"
         >
-          <div className={`${stat.bgColor} ${stat.borderColor} rounded-xl p-4 border hover:shadow-md transition-shadow`}>
-            <div className="flex items-center justify-between mb-3">
-              <div className={`p-2 ${stat.iconColor} bg-white rounded-lg shadow-sm`}>
-                <stat.icon className="w-5 h-5" />
+          <div className={`${stat.bgColor} ${stat.borderColor} rounded-xl p-3 md:p-4 border hover:shadow-md transition-shadow`}>
+            <div className="flex items-center justify-between mb-2 md:mb-3">
+              <div className={`p-1.5 md:p-2 ${stat.iconColor} bg-white rounded-lg shadow-sm`}>
+                <stat.icon className="w-4 h-4 md:w-5 md:h-5" />
               </div>
             </div>
             
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+            <div className="space-y-0.5 md:space-y-1">
+              <p className="text-xl md:text-2xl font-bold text-gray-900">{stat.value}</p>
               <p className="text-sm font-medium text-gray-600">{stat.label}</p>
             </div>
           </div>
@@ -1139,7 +1139,7 @@ export default function TripDetailPage() {
             className="mb-8"
           >
             <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8">
+              <nav className="-mb-px flex space-x-4 md:space-x-8 overflow-x-auto">
                 {[
                   { id: 'overview', label: 'Overview', count: (itineraryItems.length + accommodations.length) },
                   { id: 'itinerary', label: 'Itinerary', count: itineraryItems.length },
@@ -1148,7 +1148,7 @@ export default function TripDetailPage() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
+                    className={`py-2 px-1 border-b-2 font-medium text-xs md:text-sm transition-colors flex items-center gap-1.5 md:gap-2 whitespace-nowrap touch-manipulation ${
                       activeTab === tab.id
                         ? 'border-orange-500 text-orange-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -1156,7 +1156,7 @@ export default function TripDetailPage() {
                   >
                     <span>{tab.label}</span>
                     {tab.count > 0 && (
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      <span className={`px-1.5 md:px-2 py-0.5 rounded-full text-[10px] md:text-xs font-medium ${
                         activeTab === tab.id
                           ? 'bg-orange-100 text-orange-600'
                           : 'bg-gray-100 text-gray-500'
@@ -1308,55 +1308,56 @@ export default function TripDetailPage() {
                   />
                 )}
 
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-gray-900">Trip Timeline</h3>
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <h3 className="text-lg md:text-xl font-semibold text-gray-900">Trip Timeline</h3>
+                  <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto">
                     {/* View Toggle Buttons */}
-                    <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                    <div className="flex items-center bg-gray-100 rounded-lg p-0.5 md:p-1">
                       <button
                         onClick={() => setItineraryView('daycard')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                        className={`px-2 md:px-3 py-1.5 rounded-md text-[10px] md:text-xs font-medium transition-all flex items-center gap-1 md:gap-1.5 touch-manipulation ${
                           itineraryView === 'daycard'
                             ? 'bg-white text-gray-900 shadow-sm'
                             : 'text-gray-600 hover:text-gray-900'
                         }`}
                         title="Day Card View"
                       >
-                        <Calendar className="w-3.5 h-3.5" />
-                        Cards
+                        <Calendar className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                        <span className="hidden xs:inline">Cards</span>
                       </button>
                       <button
                         onClick={() => setItineraryView('gantt')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                        className={`px-2 md:px-3 py-1.5 rounded-md text-[10px] md:text-xs font-medium transition-all flex items-center gap-1 md:gap-1.5 touch-manipulation ${
                           itineraryView === 'gantt'
                             ? 'bg-white text-gray-900 shadow-sm'
                             : 'text-gray-600 hover:text-gray-900'
                         }`}
                         title="Gantt Chart View"
                       >
-                        <Calendar className="w-3.5 h-3.5" />
-                        Timeline
+                        <Calendar className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                        <span className="hidden xs:inline">Timeline</span>
                       </button>
                       <button
                         onClick={() => setItineraryView('timeline')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                        className={`px-2 md:px-3 py-1.5 rounded-md text-[10px] md:text-xs font-medium transition-all flex items-center gap-1 md:gap-1.5 touch-manipulation ${
                           itineraryView === 'timeline'
                             ? 'bg-white text-gray-900 shadow-sm'
                             : 'text-gray-600 hover:text-gray-900'
                         }`}
                         title="List View"
                       >
-                        <Clock className="w-3.5 h-3.5" />
-                        List
+                        <Clock className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                        <span className="hidden xs:inline">List</span>
                       </button>
                     </div>
                     
                     <button 
                       onClick={handleAddItineraryItem}
-                      className="btn-primary flex items-center gap-2"
+                      className="btn-primary flex items-center gap-2 flex-1 sm:flex-none justify-center touch-manipulation"
                     >
                       <Plus className="w-4 h-4" />
-                      Add Activity
+                      <span className="hidden sm:inline">Add Activity</span>
+                      <span className="sm:hidden">Add</span>
                     </button>
                   </div>
                 </div>
