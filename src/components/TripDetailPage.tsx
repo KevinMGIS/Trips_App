@@ -384,7 +384,7 @@ function AccommodationCard({ accommodation, onEdit, onDelete }: {
 }
 
 // Refined Quick Stats Component
-function QuickStats({ trip, stats }: { trip: Trip, stats: any }) {
+function QuickStats({ trip, stats, accommodations }: { trip: Trip, stats: any, accommodations: ItineraryItem[] }) {
   const tripDuration = (() => {
     const [startYear, startMonth, startDay] = trip.start_date.split('T')[0].split('-')
     const [endYear, endMonth, endDay] = trip.end_date.split('T')[0].split('-')
@@ -394,7 +394,7 @@ function QuickStats({ trip, stats }: { trip: Trip, stats: any }) {
   })()
 
   const itineraryCount = stats.itineraryItems || 0
-  const accommodationCount = stats.accommodations || 0
+  const accommodationCount = accommodations.length
 
   const statsData = [
     {
@@ -1135,7 +1135,7 @@ export default function TripDetailPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <QuickStats trip={trip} stats={stats} />
+              <QuickStats trip={trip} stats={stats} accommodations={accommodations} />
             </motion.div>
           </motion.div>
 
