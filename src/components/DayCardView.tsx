@@ -155,8 +155,13 @@ function SortableItem({
 export default function DayCardView({ trip, itineraryItems, onEdit, onDelete }: DayCardViewProps) {
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
 
-  const tripStartDate = new Date(trip.start_date.split('T')[0])
-  const tripEndDate = new Date(trip.end_date.split('T')[0])
+  // Parse dates without timezone conversion issues
+  const [startYear, startMonth, startDay] = trip.start_date.split('T')[0].split('-').map(Number)
+  const tripStartDate = new Date(startYear, startMonth - 1, startDay)
+  
+  const [endYear, endMonth, endDay] = trip.end_date.split('T')[0].split('-').map(Number)
+  const tripEndDate = new Date(endYear, endMonth - 1, endDay)
+  
   const totalDays = Math.ceil((tripEndDate.getTime() - tripStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
 
   // Generate array of dates

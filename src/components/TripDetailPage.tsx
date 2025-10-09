@@ -626,6 +626,12 @@ export default function TripDetailPage() {
     if (!id || !user?.id) return
     
     setLoading(true)
+    
+    // Clear previous trip data to prevent showing stale data from other trips
+    setTripIdeas([])
+    setItineraryItems([])
+    setAccommodations([])
+    
     try {
       // Load trip details
       const { data: tripData, error: tripError } = await TripService.getTripById(id)
@@ -967,8 +973,9 @@ export default function TripDetailPage() {
     // Sort dates chronologically
     const sortedDates = Object.keys(itemsByDate).sort()
 
-    // Calculate trip start date for day numbering
-    const tripStartDate = new Date(trip.start_date.split('T')[0])
+    // Calculate trip start date for day numbering - parse without timezone issues
+    const [startYear, startMonth, startDay] = trip.start_date.split('T')[0].split('-').map(Number)
+    const tripStartDate = new Date(startYear, startMonth - 1, startDay)
 
     return (
       <div className="space-y-6">
@@ -977,8 +984,9 @@ export default function TripDetailPage() {
             (a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime()
           )
           
-          // Calculate day number
-          const currentDate = new Date(dateKey)
+          // Calculate day number - parse date without timezone issues
+          const [year, month, day] = dateKey.split('-').map(Number)
+          const currentDate = new Date(year, month - 1, day)
           const dayNumber = Math.ceil((currentDate.getTime() - tripStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
           
           // Format date for display

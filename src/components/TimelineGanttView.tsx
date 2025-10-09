@@ -9,9 +9,13 @@ interface TimelineGanttViewProps {
 }
 
 export default function TimelineGanttView({ trip, itineraryItems, onItemClick }: TimelineGanttViewProps) {
-  // Calculate trip duration and date range
-  const tripStartDate = new Date(trip.start_date.split('T')[0])
-  const tripEndDate = new Date(trip.end_date.split('T')[0])
+  // Calculate trip duration and date range - parse dates without timezone issues
+  const [startYear, startMonth, startDay] = trip.start_date.split('T')[0].split('-').map(Number)
+  const tripStartDate = new Date(startYear, startMonth - 1, startDay)
+  
+  const [endYear, endMonth, endDay] = trip.end_date.split('T')[0].split('-').map(Number)
+  const tripEndDate = new Date(endYear, endMonth - 1, endDay)
+  
   const totalDays = Math.ceil((tripEndDate.getTime() - tripStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
 
   // Generate array of dates for the trip
@@ -69,13 +73,16 @@ export default function TimelineGanttView({ trip, itineraryItems, onItemClick }:
 
   // Calculate item position and width
   const getItemPosition = (item: ItineraryItem) => {
-    const itemDate = new Date(item.start_datetime.split('T')[0])
+    // Parse item date without timezone issues
+    const [itemYear, itemMonth, itemDay] = item.start_datetime.split('T')[0].split('-').map(Number)
+    const itemDate = new Date(itemYear, itemMonth - 1, itemDay)
     const dayIndex = Math.floor((itemDate.getTime() - tripStartDate.getTime()) / (1000 * 60 * 60 * 24))
     
     // Calculate duration in days
     let durationDays = 1
     if (item.end_datetime) {
-      const endDate = new Date(item.end_datetime.split('T')[0])
+      const [endYear, endMonth, endDay] = item.end_datetime.split('T')[0].split('-').map(Number)
+      const endDate = new Date(endYear, endMonth - 1, endDay)
       durationDays = Math.max(1, Math.ceil((endDate.getTime() - itemDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
     }
 
