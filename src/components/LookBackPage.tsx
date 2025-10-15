@@ -6,6 +6,7 @@ import { PhotoService } from '../lib/photoService'
 import { TripService } from '../lib/tripService'
 import Header from './Header'
 import PhotoUpload from './PhotoUpload'
+import PhotoMap from './PhotoMap'
 import type { TripPhoto, Trip } from '../types/database'
 
 export default function LookBackPage() {
@@ -16,18 +17,14 @@ export default function LookBackPage() {
   const [selectedTrip, setSelectedTrip] = useState('all')
   const [showUploadModal, setShowUploadModal] = useState(false)
 
-  useEffect(() => {
-    if (user) {
-      loadData()
-    }
-  }, [user])
-
   const loadData = async () => {
+    if (!user) return
+    
     try {
       setLoading(true)
       
       // Load user's trips
-      const { data: tripsData, error: tripsError } = await TripService.getUserTrips(user!.id)
+      const { data: tripsData, error: tripsError } = await TripService.getUserTrips(user.id)
       if (tripsError) {
         console.error('Error loading trips:', tripsError)
       } else {
@@ -35,7 +32,7 @@ export default function LookBackPage() {
       }
 
       // Load user's photos
-      const { data: photosData, error: photosError } = await PhotoService.getUserPhotos(user!.id)
+      const { data: photosData, error: photosError } = await PhotoService.getUserPhotos(user.id)
       if (photosError) {
         console.error('Error loading photos:', photosError)
       } else {
@@ -48,11 +45,33 @@ export default function LookBackPage() {
     }
   }
 
+  useEffect(() => {
+    loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
   const handlePhotoUploaded = () => {
     // Reload photos after upload
     loadData()
     setShowUploadModal(false)
   }
+
+  // Filter photos based on selected trip
+  const filteredPhotos = selectedTrip === 'all' 
+    ? photos 
+    : photos.filter(photo => photo.trip_id === selectedTrip)
+
+  // Calculate stats
+  const totalPhotos = filteredPhotos.length
+  const photosWithGPS = filteredPhotos.filter(p => p.latitude && p.longitude).length
+  const uniqueDestinations = new Set(
+    filteredPhotos
+      .map(p => p.location_name)
+      .filter(Boolean)
+  ).size
+  const tripsWithPhotos = selectedTrip === 'all'
+    ? new Set(filteredPhotos.map(p => p.trip_id)).size
+    : 1
 
   return (
     <>
@@ -137,20 +156,17 @@ export default function LookBackPage() {
                   <h2 className="text-lg font-semibold text-gray-900">Photo Map</h2>
                 </div>
                 
-                {/* Placeholder Map Container */}
-                <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
-                  <div className="text-center">
-                    <Map className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Interactive Map Coming Soon</h3>
-                    <p className="text-gray-600 mb-4">Upload photos with GPS data to see them plotted here</p>
-                    <button
-                      onClick={() => setShowUploadModal(true)}
-                      className="btn-primary"
-                    >
-                      Upload Your First Photo
-                    </button>
+                {/* Photo Map Component */}
+                {loading ? (
+                  <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="w-8 h-8 border-2 border-gray-300 border-t-orange-500 rounded-full animate-spin mb-2 mx-auto" />
+                      <p className="text-gray-600">Loading map...</p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <PhotoMap photos={filteredPhotos} />
+                )}
               </div>
             </motion.div>
 
@@ -176,10 +192,12 @@ export default function LookBackPage() {
                       </div>
                     ))}
                   </div>
-                ) : photos.length === 0 ? (
+                ) : filteredPhotos.length === 0 ? (
                   <div className="text-center py-8">
                     <Camera className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 mb-4">No photos uploaded yet</p>
+                    <p className="text-gray-500 mb-4">
+                      {selectedTrip === 'all' ? 'No photos uploaded yet' : 'No photos for this trip'}
+                    </p>
                     <button
                       onClick={() => setShowUploadModal(true)}
                       className="text-orange-500 hover:text-orange-600 font-medium text-sm"
@@ -189,7 +207,7 @@ export default function LookBackPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {photos.slice(0, 6).map((photo) => (
+                    {filteredPhotos.slice(0, 6).map((photo) => (
                       <div key={photo.id} className="group cursor-pointer">
                         <div className="aspect-video rounded-lg overflow-hidden mb-2 bg-gray-100">
                           <img
@@ -208,10 +226,10 @@ export default function LookBackPage() {
                         </div>
                       </div>
                     ))}
-                    {photos.length > 6 && (
+                    {filteredPhotos.length > 6 && (
                       <div className="text-center pt-2">
                         <p className="text-sm text-gray-500">
-                          +{photos.length - 6} more photos
+                          +{filteredPhotos.length - 6} more photos
                         </p>
                       </div>
                     )}
@@ -230,10 +248,10 @@ export default function LookBackPage() {
           >
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {[
-                { label: 'Photos Uploaded', value: photos.length.toString(), icon: Camera },
-                { label: 'Countries Visited', value: new Set(trips.map(t => t.destination.split(',').pop()?.trim())).size.toString(), icon: MapPin },
-                { label: 'Trip Memories', value: trips.length.toString(), icon: Map },
-                { label: 'Locations Tagged', value: photos.filter(p => p.latitude && p.longitude).length.toString(), icon: Calendar },
+                { label: 'Photos Uploaded', value: totalPhotos.toString(), icon: Camera },
+                { label: 'Countries Visited', value: uniqueDestinations.toString(), icon: MapPin },
+                { label: 'Trip Memories', value: tripsWithPhotos.toString(), icon: Map },
+                { label: 'Locations Tagged', value: photosWithGPS.toString(), icon: Calendar },
               ].map((stat, index) => (
                 <motion.div
                   key={stat.label}

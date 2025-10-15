@@ -29,7 +29,7 @@ export class PhotoService {
   }
 
   // Extract EXIF data from photo (placeholder - will use exifr when available)
-  static async extractEXIFData(_file: File): Promise<{
+  static async extractEXIFData(file: File): Promise<{
     latitude?: number
     longitude?: number
     takenAt?: string
@@ -37,10 +37,48 @@ export class PhotoService {
     cameraModel?: string
   }> {
     try {
-      // TODO: Implement with exifr library when installed
-      // For now, return empty object
-      console.log('EXIF extraction will be implemented with exifr library')
-      return {}
+      // Dynamically import exifr to extract metadata
+      const exifr = await import('exifr')
+      
+      // Parse EXIF data from the file - pass true to parse all available data
+      const data = await exifr.parse(file, true)
+
+      if (!data) {
+        console.log('No EXIF data found in image')
+        return {}
+      }
+
+      const result: {
+        latitude?: number
+        longitude?: number
+        takenAt?: string
+        cameraMake?: string
+        cameraModel?: string
+      } = {}
+
+      // Extract GPS coordinates
+      if (data.latitude && data.longitude) {
+        result.latitude = data.latitude
+        result.longitude = data.longitude
+      }
+
+      // Extract date taken
+      if (data.DateTimeOriginal) {
+        result.takenAt = new Date(data.DateTimeOriginal).toISOString()
+      } else if (data.CreateDate) {
+        result.takenAt = new Date(data.CreateDate).toISOString()
+      }
+
+      // Extract camera information
+      if (data.Make) {
+        result.cameraMake = data.Make
+      }
+      if (data.Model) {
+        result.cameraModel = data.Model
+      }
+
+      console.log('Extracted EXIF data:', result)
+      return result
     } catch (error) {
       console.error('Error extracting EXIF data:', error)
       return {}
